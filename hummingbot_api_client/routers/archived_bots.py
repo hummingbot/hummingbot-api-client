@@ -47,3 +47,53 @@ class ArchivedBotsRouter(BaseRouter):
     async def get_database_executors(self, db_path: str) -> Dict[str, Any]:
         """Get executor data from a database."""
         return await self._get(f"/archived-bots/{db_path}/executors")
+    
+    async def get_database_positions(
+        self, 
+        db_path: str, 
+        limit: int = 100, 
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """
+        Get position data from a database.
+        
+        Args:
+            db_path: Full path to the database file
+            limit: Maximum number of positions to return
+            offset: Offset for pagination
+            
+        Returns:
+            List of positions with pagination info
+            
+        Example:
+            # Get first 100 positions
+            positions = await client.archived_bots.get_database_positions("bot_data.db")
+            
+            # Get next page of positions
+            positions = await client.archived_bots.get_database_positions(
+                "bot_data.db", limit=50, offset=100
+            )
+        """
+        params = {"limit": limit, "offset": offset}
+        return await self._get(f"/archived-bots/{db_path}/positions", params=params)
+    
+    async def get_database_controllers(self, db_path: str) -> Dict[str, Any]:
+        """
+        Get controller data from a database.
+        
+        Args:
+            db_path: Full path to the database file
+            
+        Returns:
+            List of controllers that were running with their configurations
+            
+        Example:
+            # Get all controllers from database
+            controllers = await client.archived_bots.get_database_controllers("bot_data.db")
+            
+            # Access controller information
+            for controller in controllers["controllers"]:
+                print(f"Controller: {controller['controller_name']}")
+                print(f"Config: {controller['controller_config']}")
+        """
+        return await self._get(f"/archived-bots/{db_path}/controllers")
