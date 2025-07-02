@@ -22,100 +22,59 @@ class TradingRouter(BaseRouter):
         """
         return await self._post("/trading/orders", json=trade_request)
     
-    async def get_orders(
-        self,
-        start_time: Optional[int] = None,
-        end_time: Optional[int] = None,
-        page: Optional[int] = None,
-        page_size: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
-        """Get all orders with filters."""
-        params = {}
-        if start_time:
-            params["start_time"] = start_time
-        if end_time:
-            params["end_time"] = end_time
-        if page:
-            params["page"] = page
-        if page_size:
-            params["page_size"] = page_size
-        return await self._get("/trading/orders", params=params or None)
-    
-    async def get_active_orders(self) -> List[Dict[str, Any]]:
-        """Get all active orders."""
-        return await self._get("/trading/orders/active")
-    
-    async def get_orders_summary(self) -> Dict[str, Any]:
-        """Get order statistics."""
-        return await self._get("/trading/orders/summary")
-    
     async def cancel_order(
         self,
         account_name: str,
         connector_name: str,
-        client_order_id: str
+        client_order_id: str,
+        trading_pair: str
     ) -> Dict[str, Any]:
         """Cancel specific order."""
         return await self._post(
-            f"/trading/{account_name}/{connector_name}/orders/{client_order_id}/cancel"
+            f"/trading/{account_name}/{connector_name}/orders/{client_order_id}/cancel",
+            json={"trading_pair": trading_pair}
         )
     
-    # Account-Specific Trading
-    async def get_account_orders(
-        self,
-        account_name: str,
-        start_time: Optional[int] = None,
-        end_time: Optional[int] = None,
-        page: Optional[int] = None,
-        page_size: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
-        """Get account orders."""
-        params = {}
-        if start_time:
-            params["start_time"] = start_time
-        if end_time:
-            params["end_time"] = end_time
-        if page:
-            params["page"] = page
-        if page_size:
-            params["page_size"] = page_size
-        return await self._get(f"/trading/{account_name}/orders", params=params or None)
+    # Data Retrieval (POST with filter requests)
+    async def get_positions(self, filter_request: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Get current positions with filtering and pagination.
+        
+        Args:
+            filter_request: Filter with account_names, connector_names, trading_pairs, limit, cursor, etc.
+        """
+        if filter_request is None:
+            filter_request = {}
+        return await self._post("/trading/positions", json=filter_request)
     
-    async def get_account_active_orders(self, account_name: str) -> List[Dict[str, Any]]:
-        """Get account active orders."""
-        return await self._get(f"/trading/{account_name}/orders/active")
+    async def get_active_orders(self, filter_request: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Get active (in-flight) orders with filtering and pagination.
+        
+        Args:
+            filter_request: Filter with account_names, connector_names, trading_pairs, limit, cursor, etc.
+        """
+        if filter_request is None:
+            filter_request = {}
+        return await self._post("/trading/orders/active", json=filter_request)
     
-    async def get_account_orders_summary(self, account_name: str) -> Dict[str, Any]:
-        """Get account order summary."""
-        return await self._get(f"/trading/{account_name}/orders/summary")
+    async def search_orders(self, filter_request: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Get historical order data with filtering and pagination.
+        
+        Args:
+            filter_request: Filter with account_names, connector_names, trading_pairs, limit, cursor, start_time, end_time, etc.
+        """
+        if filter_request is None:
+            filter_request = {}
+        return await self._post("/trading/orders/search", json=filter_request)
     
-    async def get_account_trades(
-        self,
-        account_name: str,
-        start_time: Optional[int] = None,
-        end_time: Optional[int] = None,
-        page: Optional[int] = None,
-        page_size: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
-        """Get account trades."""
-        params = {}
-        if start_time:
-            params["start_time"] = start_time
-        if end_time:
-            params["end_time"] = end_time
-        if page:
-            params["page"] = page
-        if page_size:
-            params["page_size"] = page_size
-        return await self._get(f"/trading/{account_name}/trades", params=params or None)
-    
-    async def get_connector_active_orders(
-        self,
-        account_name: str,
-        connector_name: str
-    ) -> List[Dict[str, Any]]:
-        """Get connector active orders."""
-        return await self._get(f"/trading/{account_name}/{connector_name}/orders/active")
+    async def get_trades(self, filter_request: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Get trade history with filtering and pagination.
+        
+        Args:
+            filter_request: Filter with account_names, connector_names, trading_pairs, limit, cursor, start_time, end_time, etc.
+        """
+        if filter_request is None:
+            filter_request = {}
+        return await self._post("/trading/trades", json=filter_request)
     
     # Perpetual Trading Features
     async def get_position_mode(
@@ -123,7 +82,7 @@ class TradingRouter(BaseRouter):
         account_name: str,
         connector_name: str
     ) -> Dict[str, Any]:
-        """Get position mode."""
+        """Get position mode for a perpetual connector."""
         return await self._get(f"/trading/{account_name}/{connector_name}/position-mode")
     
     async def set_position_mode(
@@ -132,7 +91,11 @@ class TradingRouter(BaseRouter):
         connector_name: str,
         position_mode: str
     ) -> Dict[str, Any]:
-        """Set position mode."""
+        """Set position mode for a perpetual connector.
+        
+        Args:
+            position_mode: "HEDGE" or "ONEWAY"
+        """
         return await self._post(
             f"/trading/{account_name}/{connector_name}/position-mode",
             json={"position_mode": position_mode}
@@ -145,36 +108,8 @@ class TradingRouter(BaseRouter):
         trading_pair: str,
         leverage: int
     ) -> Dict[str, Any]:
-        """Set leverage."""
+        """Set leverage for a trading pair on a perpetual connector."""
         return await self._post(
             f"/trading/{account_name}/{connector_name}/leverage",
             json={"trading_pair": trading_pair, "leverage": leverage}
         )
-    
-    async def get_supported_order_types(
-        self,
-        account_name: str,
-        connector_name: str
-    ) -> List[str]:
-        """Get supported order types."""
-        return await self._get(f"/trading/{account_name}/{connector_name}/order-types")
-    
-    # Trade History
-    async def get_all_trades(
-        self,
-        start_time: Optional[int] = None,
-        end_time: Optional[int] = None,
-        page: Optional[int] = None,
-        page_size: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
-        """Get all trades."""
-        params = {}
-        if start_time:
-            params["start_time"] = start_time
-        if end_time:
-            params["end_time"] = end_time
-        if page:
-            params["page"] = page
-        if page_size:
-            params["page_size"] = page_size
-        return await self._get("/trading/trades", params=params or None)

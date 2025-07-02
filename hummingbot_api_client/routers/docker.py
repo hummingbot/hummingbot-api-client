@@ -10,68 +10,52 @@ class DockerRouter(BaseRouter):
         """Check Docker daemon status."""
         return await self._get("/docker/running")
     
-    async def get_active_containers(self) -> List[Dict[str, Any]]:
-        """List running containers."""
-        return await self._get("/docker/active-containers")
-    
-    async def get_exited_containers(self) -> List[Dict[str, Any]]:
-        """List stopped containers."""
-        return await self._get("/docker/exited-containers")
-    
-    async def clean_exited_containers(self) -> Dict[str, Any]:
-        """Clean up stopped containers."""
-        return await self._post("/docker/clean-exited-containers")
-    
-    # Container Management
-    async def start_container(self, container_name: str) -> Dict[str, Any]:
-        """Start container."""
-        return await self._post(f"/docker/start-container/{container_name}")
-    
-    async def stop_container(self, container_name: str) -> Dict[str, Any]:
-        """Stop container."""
-        return await self._post(f"/docker/stop-container/{container_name}")
-    
-    async def remove_container(
-        self,
-        container_name: str,
-        archive_locally: Optional[bool] = None
-    ) -> Dict[str, Any]:
-        """Remove container with archiving options."""
-        json_data = {}
-        if archive_locally is not None:
-            json_data["archive_locally"] = archive_locally
-        return await self._post(
-            f"/docker/remove-container/{container_name}",
-            json=json_data if json_data else None
-        )
-    
-    # Image Operations
-    async def get_available_images(self, image_name: str) -> List[str]:
-        """List available images."""
+    async def get_available_images(self, image_name: str) -> Dict[str, Any]:
+        """Get available Docker images matching the specified name."""
         return await self._get(f"/docker/available-images/{image_name}")
     
-    async def pull_image(self, pull_request: Dict[str, Any]) -> Dict[str, Any]:
-        """Pull image (background task).
-        
-        Args:
-            pull_request: Request with:
-                - image_name: str
-                - tag: str (optional)
-        """
-        return await self._post("/docker/pull-image/", json=pull_request)
+    async def get_active_containers(self, name_filter: Optional[str] = None) -> Dict[str, Any]:
+        """Get all currently active (running) Docker containers."""
+        params = {"name_filter": name_filter} if name_filter else None
+        return await self._get("/docker/active-containers", params=params)
     
-    async def get_pull_status(self, image_name: str) -> Dict[str, Any]:
-        """Check pull status."""
-        return await self._get(f"/docker/pull-status/{image_name}")
+    async def get_all_containers(self) -> Dict[str, Any]:
+        """Get all Docker containers (running and stopped)."""
+        return await self._get("/docker/all-containers")
     
-    async def clear_pull_status(self, image_name: str) -> Dict[str, Any]:
-        """Clear pull status."""
-        return await self._delete(f"/docker/pull-status/{image_name}")
+    # Container Management
+    async def get_container_status(self, container_name: str) -> Dict[str, Any]:
+        """Get detailed status information for a specific container."""
+        return await self._get(f"/docker/container/{container_name}/status")
     
-    # Convenience methods
-    async def pull_hummingbot_image(self, tag: str = "latest") -> Dict[str, Any]:
-        """Pull Hummingbot image with specific tag."""
-        return await self.pull_image({
-            "image_name": "hummingbot/hummingbot",
-            "tag": tag
-        })
+    async def start_container(self, container_name: str) -> Dict[str, Any]:
+        """Start a stopped container."""
+        return await self._post(f"/docker/container/{container_name}/start")
+    
+    async def stop_container(self, container_name: str) -> Dict[str, Any]:
+        """Stop a running container."""
+        return await self._post(f"/docker/container/{container_name}/stop")
+    
+    async def remove_container(self, container_name: str, force: bool = False) -> Dict[str, Any]:
+        """Remove a container."""
+        params = {"force": force} if force else None
+        return await self._delete(f"/docker/container/{container_name}", params=params)
+    
+    async def get_container_logs(self, container_name: str, tail: int = 100) -> Dict[str, Any]:
+        """Get logs from a container."""
+        params = {"tail": tail}
+        return await self._get(f"/docker/logs/{container_name}", params=params)
+    
+    # Image Management
+    async def pull_image(self, image_name: str, tag: str = "latest") -> Dict[str, Any]:
+        """Pull a Docker image from registry."""
+        return await self._post("/docker/images/pull", json={"name": image_name, "tag": tag})
+    
+    # Bot Archiving
+    async def list_archived_bots(self) -> Dict[str, Any]:
+        """List all archived bot instances."""
+        return await self._get("/docker/archived-bots")
+    
+    async def restore_archived_bot(self, bot_name: str) -> Dict[str, Any]:
+        """Restore an archived bot instance."""
+        return await self._post(f"/docker/archived-bots/{bot_name}/restore")

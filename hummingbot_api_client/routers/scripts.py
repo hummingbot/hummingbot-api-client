@@ -3,62 +3,42 @@ from .base import BaseRouter
 
 
 class ScriptsRouter(BaseRouter):
-    """Scripts router for custom script management."""
+    """Scripts router for script and script configuration management."""
     
-    # Script Management
+    # Script Operations
     async def list_scripts(self) -> List[str]:
-        """List all scripts."""
+        """List all available scripts."""
         return await self._get("/scripts/")
     
-    async def get_script(self, script_name: str) -> str:
-        """Get script content."""
+    async def get_script(self, script_name: str) -> Dict[str, str]:
+        """Get script content by name."""
         return await self._get(f"/scripts/{script_name}")
     
-    async def create_or_update_script(
-        self,
-        script_name: str,
-        script_content: str
-    ) -> Dict[str, Any]:
-        """Create/update script."""
-        return await self._post(
-            f"/scripts/{script_name}",
-            json={"script_content": script_content}
-        )
+    async def create_or_update_script(self, script_name: str, script_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create or update a script."""
+        return await self._post(f"/scripts/{script_name}", json=script_data)
     
     async def delete_script(self, script_name: str) -> Dict[str, Any]:
-        """Delete script."""
+        """Delete a script."""
         return await self._delete(f"/scripts/{script_name}")
     
     async def get_script_config_template(self, script_name: str) -> Dict[str, Any]:
-        """Get script config template."""
+        """Get script configuration template with default values."""
         return await self._get(f"/scripts/{script_name}/config/template")
     
-    # Configuration Management
-    async def list_script_configs(self) -> List[str]:
-        """List all script configs."""
+    # Script Configuration Operations
+    async def list_script_configs(self) -> List[Dict]:
+        """List all script configurations with metadata."""
         return await self._get("/scripts/configs/")
     
     async def get_script_config(self, config_name: str) -> Dict[str, Any]:
-        """Get script config."""
+        """Get script configuration by config name."""
         return await self._get(f"/scripts/configs/{config_name}")
     
-    async def create_or_update_script_config(
-        self,
-        config_name: str,
-        config_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Create/update script config."""
-        return await self._post(f"/scripts/configs/{config_name}", json=config_data)
+    async def create_or_update_script_config(self, config_name: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        """Create or update script configuration."""
+        return await self._post(f"/scripts/configs/{config_name}", json=config)
     
     async def delete_script_config(self, config_name: str) -> Dict[str, Any]:
-        """Delete script config."""
+        """Delete script configuration."""
         return await self._delete(f"/scripts/configs/{config_name}")
-    
-    # Convenience methods
-    async def upload_script(self, script_name: str, script_content: str) -> Dict[str, Any]:
-        """Upload a new script."""
-        return await self.create_or_update_script(script_name, script_content)
-    
-    async def download_script(self, script_name: str) -> str:
-        """Download script content."""
-        return await self.get_script(script_name)

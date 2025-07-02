@@ -14,10 +14,22 @@ class BaseRouter:
             response.raise_for_status()
             return await response.json()
     
-    async def _post(self, path: str, json: Optional[dict] = None) -> dict:
+    async def _post(self, path: str, json: Optional[dict] = None, params: Optional[dict] = None) -> dict:
         """Perform a POST request and return JSON response."""
         url = f"{self.base_url}/{path.lstrip('/')}"
-        async with self.session.post(url, json=json) as response:
+        async with self.session.post(url, json=json, params=params) as response:
+            if not response.ok:
+                try:
+                    error_detail = await response.json()
+                    raise aiohttp.ClientResponseError(
+                        response.request_info, 
+                        response.history,
+                        status=response.status,
+                        message=str(error_detail),
+                        headers=response.headers
+                    )
+                except:
+                    pass
             response.raise_for_status()
             return await response.json()
     

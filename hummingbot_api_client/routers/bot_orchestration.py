@@ -3,107 +3,69 @@ from .base import BaseRouter
 
 
 class BotOrchestrationRouter(BaseRouter):
-    """Bot orchestration router for bot lifecycle management and monitoring."""
+    """Bot Orchestration router for bot lifecycle management and MQTT operations."""
     
-    # Bot Management
-    async def get_bots_status(self) -> List[Dict[str, Any]]:
-        """Get all active bots status."""
+    # Bot Status Operations
+    async def get_active_bots_status(self) -> Dict[str, Any]:
+        """Get the status of all active bots."""
         return await self._get("/bot-orchestration/status")
     
+    async def get_mqtt_status(self) -> Dict[str, Any]:
+        """Get MQTT connection status and discovered bots."""
+        return await self._get("/bot-orchestration/mqtt")
+    
     async def get_bot_status(self, bot_name: str) -> Dict[str, Any]:
-        """Get specific bot status."""
+        """Get the status of a specific bot."""
         return await self._get(f"/bot-orchestration/{bot_name}/status")
     
     async def get_bot_history(
         self,
         bot_name: str,
-        start_time: Optional[int] = None,
-        end_time: Optional[int] = None,
-        page: Optional[int] = None,
-        page_size: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
-        """Get bot trading history."""
-        params = {}
-        if start_time:
-            params["start_time"] = start_time
-        if end_time:
-            params["end_time"] = end_time
-        if page:
-            params["page"] = page
-        if page_size:
-            params["page_size"] = page_size
-        return await self._get(f"/bot-orchestration/{bot_name}/history", params=params or None)
-    
-    async def start_bot(self, start_request: Dict[str, Any]) -> Dict[str, Any]:
-        """Start bot with config.
-        
-        Args:
-            start_request: Request with:
-                - bot_name: str
-                - log_level: str (optional) - DEBUG, INFO, WARNING, ERROR
-                - script: str (optional)
-                - conf: str (optional)
-                - async_backend: bool (optional)
-        """
-        return await self._post("/bot-orchestration/start-bot", json=start_request)
-    
-    async def stop_bot(self, bot_name: str) -> Dict[str, Any]:
-        """Stop bot."""
-        return await self._post("/bot-orchestration/stop-bot", json={"bot_name": bot_name})
-    
-    async def stop_and_archive_bot(self, bot_name: str) -> Dict[str, Any]:
-        """Stop and archive bot."""
-        return await self._post(f"/bot-orchestration/stop-and-archive-bot/{bot_name}")
-    
-    # Instance Creation
-    async def create_hummingbot_instance(
-        self,
-        instance_request: Dict[str, Any]
+        days: int = 0,
+        verbose: bool = False,
+        precision: Optional[int] = None,
+        timeout: float = 30.0
     ) -> Dict[str, Any]:
-        """Create new Hummingbot instance.
-        
-        Args:
-            instance_request: Request with instance configuration
-        """
-        return await self._post(
-            "/bot-orchestration/create-hummingbot-instance",
-            json=instance_request
-        )
+        """Get trading history for a bot with optional parameters."""
+        params = {
+            "days": days,
+            "verbose": verbose,
+            "timeout": timeout
+        }
+        if precision is not None:
+            params["precision"] = precision
+        return await self._get(f"/bot-orchestration/{bot_name}/history", params=params)
     
-    async def deploy_v2_controllers(
-        self,
-        deployment_request: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Deploy V2 strategy with controllers.
-        
-        Args:
-            deployment_request: Request with deployment configuration
-        """
-        return await self._post(
-            "/bot-orchestration/deploy-v2-controllers",
-            json=deployment_request
-        )
+    # Bot Control Operations
+    async def start_bot(self, start_bot_action: Dict[str, Any]) -> Dict[str, Any]:
+        """Start a bot with the specified configuration."""
+        return await self._post("/bot-orchestration/start-bot", json=start_bot_action)
     
-    # MQTT Integration
-    async def get_mqtt_status(self) -> Dict[str, Any]:
-        """Get MQTT connection status."""
-        return await self._get("/bot-orchestration/mqtt")
+    async def stop_bot(self, stop_bot_action: Dict[str, Any]) -> Dict[str, Any]:
+        """Stop a bot with the specified configuration."""
+        return await self._post("/bot-orchestration/stop-bot", json=stop_bot_action)
     
-    # Convenience methods
-    async def start_simple_bot(
+    async def stop_and_archive_bot(
         self,
         bot_name: str,
-        script: Optional[str] = None,
-        conf: Optional[str] = None,
-        log_level: str = "INFO"
+        skip_order_cancellation: bool = True,
+        archive_locally: bool = True,
+        s3_bucket: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Start a bot with simple configuration."""
-        request = {
-            "bot_name": bot_name,
-            "log_level": log_level
+        """Gracefully stop a bot and archive its data in the background."""
+        params = {
+            "skip_order_cancellation": skip_order_cancellation,
+            "archive_locally": archive_locally
         }
-        if script:
-            request["script"] = script
-        if conf:
-            request["conf"] = conf
-        return await self.start_bot(request)
+        if s3_bucket:
+            params["s3_bucket"] = s3_bucket
+        return await self._post(f"/bot-orchestration/stop-and-archive-bot/{bot_name}", params=params)
+    
+    # Bot Deployment Operations
+    async def deploy_v2_script(self, script_deployment: Dict[str, Any]) -> Dict[str, Any]:
+        """Creates and autostart a v2 script with a configuration if present."""
+        return await self._post("/bot-orchestration/deploy-v2-script", json=script_deployment)
+    
+    async def deploy_v2_controllers(self, controller_deployment: Dict[str, Any]) -> Dict[str, Any]:
+        """Deploy a V2 strategy with controllers by generating the script config and creating the instance."""
+        return await self._post("/bot-orchestration/deploy-v2-controllers", json=controller_deployment)
