@@ -3,14 +3,14 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hummingbot-client"
+name = "hummingbot-api-client"
 version = "0.1.0"
 description = "An async Python client for Hummingbot API"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Federico Cardoso", email = "federico@hummingbot.org"},
+    {name = "Federico Cardoso", email = "federico.cardoso.e@gmail.com"},
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
