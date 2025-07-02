@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Trading Router Test Script
+Trading Router Interactive Example
 
 This script demonstrates the complete trading functionality of the Hummingbot API.
-It covers order management, position tracking, trade history, and perpetual trading features.
+It shows you the actual code before executing each operation to help you learn how to use the client.
 
 Usage:
-    python test_trading_router.py              # Run automatically
-    python test_trading_router.py --interactive # Interactive mode with explanations
+    python trading_example.py              # Run automatically
+    python trading_example.py --interactive # Interactive mode with step-by-step explanations
 """
 
 import asyncio
@@ -15,15 +15,27 @@ import argparse
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from hummingbot_api_client.client import HummingbotClient
+from hummingbot_api_client.client import HummingbotAPIClient
 
 
-class TradingRouterTester:
+class TradingRouterDemo:
     def __init__(self, interactive=False):
         self.interactive = interactive
         self.client = None
 
-    async def wait_for_user(self, message):
+    def print_code_block(self, title: str, code: str, description: str = None):
+        """Print a formatted code block with title and description."""
+        print(f"\n{'='*70}")
+        print(f"📝 {title}")
+        if description:
+            print(f"💡 {description}")
+        print(f"{'='*70}")
+        print("```python")
+        print(code.strip())
+        print("```")
+        print(f"{'='*70}")
+
+    async def wait_for_user(self, message: str):
         """Wait for user input in interactive mode."""
         if self.interactive:
             print(f"\n🔄 {message}")
@@ -31,9 +43,61 @@ class TradingRouterTester:
         else:
             print(f"\n🔄 {message}")
 
-    async def step_1_check_current_positions(self):
-        """Step 1: Check current trading positions."""
-        await self.wait_for_user("Step 1: Checking current trading positions")
+    async def overview_trading_functionalities(self):
+        """Present all Trading router functionalities."""
+        print("💰 Trading Router - Available Functionalities")
+        print("=" * 70)
+        
+        functionalities = [
+            ("📊 Current Positions", "get_positions(params)", "Get current trading positions"),
+            ("📈 Trade History", "get_trades(params)", "Get executed trade history"),
+            ("🔄 Active Orders", "get_active_orders(params)", "Get currently active orders"),
+            ("🔍 Search Orders", "search_orders(params)", "Search historical orders"),
+            ("⚙️ Position Mode", "get_position_mode(account, connector)", "Get perpetual position mode"),
+            ("🎯 Order Placement", "place_order(order_data)", "Place new trading orders"),
+            ("❌ Cancel Orders", "cancel_order(order_id)", "Cancel existing orders"),
+        ]
+        
+        print("Available Trading Router Methods:")
+        print()
+        # Calculate the maximum width for proper alignment
+        max_icon_width = max(len(icon) for icon, _, _ in functionalities)
+        max_method_width = max(len(method) for _, method, _ in functionalities)
+        
+        for icon, method, description in functionalities:
+            print(f"  {icon:<{max_icon_width + 2}} {method:<{max_method_width + 2}} - {description}")
+        
+        await self.wait_for_user("Ready to explore trading operations?")
+
+    async def demo_get_positions(self):
+        """Demonstrate getting current positions."""
+        self.print_code_block(
+            "Get Current Trading Positions",
+            """
+# Get current trading positions with pagination
+positions = await client.trading.get_positions({"limit": 10})
+
+print(f"Current positions: {len(positions['data'])}")
+for position in positions["data"]:
+    trading_pair = position.get('trading_pair', 'Unknown')
+    connector = position.get('connector_name', 'Unknown')
+    amount = position.get('amount', 0)
+    unrealized_pnl = position.get('unrealized_pnl', 0)
+    
+    print(f"  {trading_pair} on {connector}")
+    print(f"    Size: {amount}, PnL: {unrealized_pnl}")
+
+# You can also filter by account or trading pair
+filtered_positions = await client.trading.get_positions({
+    "account_names": ["main_account"],
+    "trading_pairs": ["BTC-USDT"],
+    "limit": 5
+})
+            """,
+            "Shows your current open positions across all exchanges"
+        )
+        
+        await self.wait_for_user("About to get current trading positions")
         
         try:
             positions = await self.client.trading.get_positions({"limit": 10})
@@ -41,8 +105,12 @@ class TradingRouterTester:
             print(f"📊 Found {position_count} current positions:")
             
             for position in positions["data"][:5]:  # Show first 5
-                print(f"  - {position.get('trading_pair', 'Unknown')} on {position.get('connector_name', 'Unknown')}")
-                print(f"    Size: {position.get('amount', 0)}, PnL: {position.get('unrealized_pnl', 0)}")
+                trading_pair = position.get('trading_pair', 'Unknown')
+                connector = position.get('connector_name', 'Unknown')
+                amount = position.get('amount', 0)
+                unrealized_pnl = position.get('unrealized_pnl', 0)
+                print(f"  - {trading_pair} on {connector}")
+                print(f"    Size: {amount}, PnL: {unrealized_pnl}")
             
             if position_count > 5:
                 print(f"    ... and {position_count - 5} more positions")
@@ -52,9 +120,39 @@ class TradingRouterTester:
             print(f"❌ Error getting positions: {e}")
             return {"data": [], "pagination": {}}
 
-    async def step_2_get_recent_trades(self):
-        """Step 2: Get recent trade history."""
-        await self.wait_for_user("Step 2: Getting recent trade history")
+    async def demo_get_trades(self):
+        """Demonstrate getting trade history."""
+        self.print_code_block(
+            "Get Trade History",
+            """
+# Get recent trade history
+trades = await client.trading.get_trades({"limit": 5})
+
+print(f"Recent trades: {len(trades['data'])}")
+for trade in trades["data"]:
+    trade_type = trade.get('trade_type', 'Unknown')
+    amount = trade.get('amount', 0)
+    trading_pair = trade.get('trading_pair', 'Unknown')
+    price = trade.get('price', 0)
+    fee_paid = trade.get('fee_paid', 0)
+    fee_currency = trade.get('fee_currency', '')
+    timestamp = trade.get('timestamp', 'Unknown')
+    
+    print(f"  {trade_type} {amount} {trading_pair}")
+    print(f"    Price: {price}, Fee: {fee_paid} {fee_currency}")
+    print(f"    Time: {timestamp}")
+
+# Filter trades by account, pair, or date range
+filtered_trades = await client.trading.get_trades({
+    "account_names": ["main_account"],
+    "trading_pairs": ["BTC-USDT", "ETH-USDT"],
+    "limit": 10
+})
+            """,
+            "Shows your executed trades with prices, fees, and timestamps"
+        )
+        
+        await self.wait_for_user("About to get recent trade history")
         
         try:
             trades = await self.client.trading.get_trades({"limit": 5})
@@ -62,18 +160,54 @@ class TradingRouterTester:
             print(f"📈 Found {trade_count} recent trades:")
             
             for trade in trades["data"]:
-                print(f"  - {trade.get('trade_type', 'Unknown')} {trade.get('amount', 0)} {trade.get('trading_pair', 'Unknown')}")
-                print(f"    Price: {trade.get('price', 0)}, Fee: {trade.get('fee_paid', 0)} {trade.get('fee_currency', '')}")
-                print(f"    Time: {trade.get('timestamp', 'Unknown')}")
+                trade_type = trade.get('trade_type', 'Unknown')
+                amount = trade.get('amount', 0)
+                trading_pair = trade.get('trading_pair', 'Unknown')
+                price = trade.get('price', 0)
+                fee_paid = trade.get('fee_paid', 0)
+                fee_currency = trade.get('fee_currency', '')
+                timestamp = trade.get('timestamp', 'Unknown')
+                
+                print(f"  - {trade_type} {amount} {trading_pair}")
+                print(f"    Price: {price}, Fee: {fee_paid} {fee_currency}")
+                print(f"    Time: {timestamp}")
             
             return trades
         except Exception as e:
             print(f"❌ Error getting trades: {e}")
             return {"data": [], "pagination": {}}
 
-    async def step_3_check_active_orders(self):
-        """Step 3: Check currently active (in-flight) orders."""
-        await self.wait_for_user("Step 3: Checking active (in-flight) orders")
+    async def demo_get_active_orders(self):
+        """Demonstrate getting active orders."""
+        self.print_code_block(
+            "Get Active Orders",
+            """
+# Get currently active (in-flight) orders
+active_orders = await client.trading.get_active_orders({"limit": 10})
+
+print(f"Active orders: {len(active_orders['data'])}")
+for order in active_orders["data"]:
+    trade_type = order.get('trade_type', 'Unknown')
+    amount = order.get('amount', 0)
+    trading_pair = order.get('trading_pair', 'Unknown')
+    price = order.get('price', 0)
+    status = order.get('status', 'Unknown')
+    order_id = order.get('order_id', 'Unknown')
+    
+    print(f"  {trade_type} {amount} {trading_pair}")
+    print(f"    Price: {price}, Status: {status}")
+    print(f"    Order ID: {order_id}")
+
+# Filter by account or trading pair
+filtered_orders = await client.trading.get_active_orders({
+    "account_names": ["main_account"],
+    "trading_pairs": ["BTC-USDT"]
+})
+            """,
+            "Shows orders that are currently pending or partially filled"
+        )
+        
+        await self.wait_for_user("About to get active orders")
         
         try:
             active_orders = await self.client.trading.get_active_orders({"limit": 10})
@@ -81,18 +215,58 @@ class TradingRouterTester:
             print(f"🔄 Found {order_count} active orders:")
             
             for order in active_orders["data"]:
-                print(f"  - {order.get('trade_type', 'Unknown')} {order.get('amount', 0)} {order.get('trading_pair', 'Unknown')}")
-                print(f"    Price: {order.get('price', 0)}, Status: {order.get('status', 'Unknown')}")
-                print(f"    Order ID: {order.get('order_id', 'Unknown')}")
+                trade_type = order.get('trade_type', 'Unknown')
+                amount = order.get('amount', 0)
+                trading_pair = order.get('trading_pair', 'Unknown')
+                price = order.get('price', 0)
+                status = order.get('status', 'Unknown')
+                order_id = order.get('order_id', 'Unknown')
+                
+                print(f"  - {trade_type} {amount} {trading_pair}")
+                print(f"    Price: {price}, Status: {status}")
+                print(f"    Order ID: {order_id}")
             
             return active_orders
         except Exception as e:
             print(f"❌ Error getting active orders: {e}")
             return {"data": [], "pagination": {}}
 
-    async def step_4_search_historical_orders(self):
-        """Step 4: Search historical orders from database."""
-        await self.wait_for_user("Step 4: Searching historical orders")
+    async def demo_search_orders(self):
+        """Demonstrate searching historical orders."""
+        self.print_code_block(
+            "Search Historical Orders",
+            """
+# Search historical orders from database
+orders = await client.trading.search_orders({"limit": 5})
+
+order_count = len(orders["data"])
+total_count = orders["pagination"].get("total_count", order_count)
+print(f"Found {order_count} orders (total: {total_count})")
+
+for order in orders["data"]:
+    trade_type = order.get('trade_type', 'Unknown')
+    amount = order.get('amount', 0)
+    trading_pair = order.get('trading_pair', 'Unknown')
+    price = order.get('price', 0)
+    status = order.get('status', 'Unknown')
+    created_at = order.get('created_at', 'Unknown')
+    
+    print(f"  {trade_type} {amount} {trading_pair}")
+    print(f"    Price: {price}, Status: {status}")
+    print(f"    Created: {created_at}")
+
+# Advanced filtering examples
+filtered_orders = await client.trading.search_orders({
+    "account_names": ["main_account"],
+    "trading_pairs": ["BTC-USDT", "ETH-USDT"],
+    "status": "FILLED",
+    "limit": 10
+})
+            """,
+            "Searches through your complete order history with powerful filters"
+        )
+        
+        await self.wait_for_user("About to search historical orders")
         
         try:
             orders = await self.client.trading.search_orders({"limit": 5})
@@ -101,18 +275,54 @@ class TradingRouterTester:
             print(f"📋 Found {order_count} orders (total: {total_count}):")
             
             for order in orders["data"]:
-                print(f"  - {order.get('trade_type', 'Unknown')} {order.get('amount', 0)} {order.get('trading_pair', 'Unknown')}")
-                print(f"    Price: {order.get('price', 0)}, Status: {order.get('status', 'Unknown')}")
-                print(f"    Created: {order.get('created_at', 'Unknown')}")
+                trade_type = order.get('trade_type', 'Unknown')
+                amount = order.get('amount', 0)
+                trading_pair = order.get('trading_pair', 'Unknown')
+                price = order.get('price', 0)
+                status = order.get('status', 'Unknown')
+                created_at = order.get('created_at', 'Unknown')
+                
+                print(f"  - {trade_type} {amount} {trading_pair}")
+                print(f"    Price: {price}, Status: {status}")
+                print(f"    Created: {created_at}")
             
             return orders
         except Exception as e:
             print(f"❌ Error searching orders: {e}")
             return {"data": [], "pagination": {}}
 
-    async def step_5_demonstrate_position_mode(self):
-        """Step 5: Demonstrate position mode operations for perpetual connectors."""
-        await self.wait_for_user("Step 5: Demonstrating position mode operations")
+    async def demo_position_mode(self):
+        """Demonstrate position mode operations."""
+        self.print_code_block(
+            "Get Position Mode (Perpetual Trading)",
+            """
+# Get position mode for perpetual connectors
+accounts = await client.accounts.list_accounts()
+
+for account in accounts:
+    # Check if this account has perpetual connectors
+    credentials = await client.accounts.list_account_credentials(account)
+    
+    for connector in credentials:
+        if "perpetual" in connector.lower():
+            print(f"Found perpetual connector: {connector} in account {account}")
+            
+            # Get position mode
+            mode = await client.trading.get_position_mode(account, connector)
+            print(f"Current position mode: {mode}")
+            
+            # Position modes are typically:
+            # - HEDGE: Separate long/short positions
+            # - ONEWAY: Net positions only
+            break
+
+# Note: Changing position mode typically requires no open positions
+# set_result = await client.trading.set_position_mode(account, connector, "HEDGE")
+            """,
+            "Manages position modes for perpetual/futures trading"
+        )
+        
+        await self.wait_for_user("About to check position mode operations")
         
         try:
             # Try to find an account with perpetual connectors
@@ -150,12 +360,50 @@ class TradingRouterTester:
             print(f"❌ Error with position mode operations: {e}")
             return False
 
-    async def step_6_show_trading_capabilities(self):
-        """Step 6: Show trading capabilities and limitations."""
-        await self.wait_for_user("Step 6: Showing trading capabilities")
+    async def demo_order_placement_info(self):
+        """Show order placement capabilities without executing."""
+        self.print_code_block(
+            "Order Placement Example",
+            """
+# Example order placement (NOT executed in this demo)
+order_data = {
+    "account_name": "main_account",
+    "connector_name": "binance",
+    "trading_pair": "BTC-USDT",
+    "trade_type": "BUY",
+    "order_type": "LIMIT",
+    "amount": 0.001,
+    "price": 50000.0
+}
+
+# Place a limit buy order
+result = await client.trading.place_order(order_data)
+print(f"Order placed: {result}")
+
+# Place a market order (no price needed)
+market_order = {
+    "account_name": "main_account",
+    "connector_name": "binance",
+    "trading_pair": "ETH-USDT",
+    "trade_type": "SELL",
+    "order_type": "MARKET",
+    "amount": 0.1
+}
+
+result = await client.trading.place_order(market_order)
+print(f"Market order placed: {result}")
+
+# Cancel an order
+cancel_result = await client.trading.cancel_order("order_id_here")
+print(f"Order cancelled: {cancel_result}")
+            """,
+            "Shows how to place and manage orders (not executed for safety)"
+        )
+        
+        await self.wait_for_user("About to show order placement capabilities")
         
         try:
-            # Show available accounts with credentials
+            # Check which accounts are ready for trading
             accounts = await self.client.accounts.list_accounts()
             trading_ready_accounts = []
             
@@ -174,11 +422,35 @@ class TradingRouterTester:
             if trading_ready_accounts:
                 print(f"\n📊 {len(trading_ready_accounts)} accounts ready for trading")
                 
-                # Show details for first trading-ready account
+                # Show example for first trading-ready account
                 account, connectors = trading_ready_accounts[0]
-                print(f"\nFirst trading-ready account: {account}")
-                print(f"Available connectors: {connectors}")
+                connector = connectors[0]
                 
+                print(f"\n🎯 Example order for account: {account}, connector: {connector}")
+                print(f"📝 Order structure:")
+                print(f"   - Trading pair: BTC-USDT")
+                print(f"   - Order type: LIMIT")
+                print(f"   - Side: BUY")
+                print(f"   - Amount: 0.001")
+                print(f"   - Price: Current market price - 5%")
+                
+                print(f"\n⚠️  Note: Actual order placement requires:")
+                print(f"   - Valid API credentials")
+                print(f"   - Sufficient account balance")
+                print(f"   - Proper risk management")
+                
+                # Show the structure of what a real order would look like
+                example_order = {
+                    "account_name": account,
+                    "connector_name": connector,
+                    "trading_pair": "BTC-USDT",
+                    "trade_type": "BUY",
+                    "order_type": "LIMIT",
+                    "amount": 0.001,
+                    "price": 50000.0  # Example price
+                }
+                
+                print(f"\n📋 Example order structure: {example_order}")
                 return trading_ready_accounts
             else:
                 print("\n⚠️  No accounts configured for trading")
@@ -188,76 +460,54 @@ class TradingRouterTester:
             print(f"❌ Error checking trading capabilities: {e}")
             return []
 
-    async def step_7_demonstrate_order_placement(self, trading_accounts):
-        """Step 7: Demonstrate order placement (if accounts are available)."""
-        await self.wait_for_user("Step 7: Demonstrating order placement capabilities")
-        
-        if not trading_accounts:
-            print("ℹ️  Skipping order placement - no trading accounts available")
-            return None
-        
-        try:
-            account, connectors = trading_accounts[0]
-            connector = connectors[0]
-            
-            print(f"🎯 Would place order using account: {account}, connector: {connector}")
-            print("📝 Example order placement:")
-            print("   - Trading pair: BTC-USDT")
-            print("   - Order type: LIMIT")
-            print("   - Side: BUY")
-            print("   - Amount: 0.001")
-            print("   - Price: Current market price - 5%")
-            print("\n⚠️  Note: Actual order placement requires:")
-            print("   - Valid API credentials")
-            print("   - Sufficient account balance")
-            print("   - Proper risk management")
-            
-            # Show the structure of what a real order would look like
-            example_order = {
-                "account_name": account,
-                "connector_name": connector,
-                "trading_pair": "BTC-USDT",
-                "trade_type": "BUY",
-                "order_type": "LIMIT",
-                "amount": 0.001,
-                "price": 50000.0  # Example price
-            }
-            
-            print(f"\n📋 Example order structure: {example_order}")
-            return example_order
-            
-        except Exception as e:
-            print(f"❌ Error demonstrating order placement: {e}")
-            return None
+    async def demo_filtering_capabilities(self):
+        """Demonstrate advanced filtering capabilities."""
+        self.print_code_block(
+            "Advanced Filtering Examples",
+            """
+# Example filters for different trading queries
 
-    async def step_8_show_order_monitoring(self):
-        """Step 8: Show how to monitor orders."""
-        await self.wait_for_user("Step 8: Showing order monitoring capabilities")
-        
-        try:
-            print("📊 Order monitoring capabilities:")
-            print("1. Active Orders: Real-time status of open orders")
-            print("2. Order History: Complete order database with pagination")
-            print("3. Trade History: Executed trades with fees and timestamps")
-            print("4. Position Tracking: Current positions with PnL")
-            
-            # Show pagination example
-            print("\n📄 Pagination example:")
-            orders = await self.client.trading.search_orders({"limit": 2})
-            pagination = orders.get("pagination", {})
-            print(f"   - Limit: {pagination.get('limit', 'N/A')}")
-            print(f"   - Has more: {pagination.get('has_more', 'N/A')}")
-            print(f"   - Total count: {pagination.get('total_count', 'N/A')}")
-            print(f"   - Next cursor: {pagination.get('next_cursor', 'N/A')}")
-            
-            return True
-        except Exception as e:
-            print(f"❌ Error showing monitoring: {e}")
-            return False
+# Filter by account
+account_trades = await client.trading.get_trades({
+    "account_names": ["main_account"],
+    "limit": 10
+})
 
-    async def step_9_demonstrate_filtering(self):
-        """Step 9: Demonstrate advanced filtering capabilities."""
-        await self.wait_for_user("Step 9: Demonstrating filtering capabilities")
+# Filter by trading pairs
+pair_trades = await client.trading.get_trades({
+    "trading_pairs": ["BTC-USDT", "ETH-USDT"],
+    "limit": 10
+})
+
+# Filter orders by status
+filled_orders = await client.trading.search_orders({
+    "status": "FILLED",
+    "limit": 10
+})
+
+# Combine multiple filters
+filtered_data = await client.trading.search_orders({
+    "account_names": ["main_account"],
+    "trading_pairs": ["BTC-USDT"],
+    "status": "FILLED",
+    "limit": 5,
+    "offset": 0  # For pagination
+})
+
+# Use pagination to get more data
+next_page = await client.trading.search_orders({
+    "account_names": ["main_account"],
+    "limit": 5,
+    "offset": 5
+})
+
+print(f"First page: {len(filtered_data['data'])} orders")
+print(f"Next page: {len(next_page['data'])} orders")
+            """,
+            "Shows powerful filtering options for analyzing your trading data"
+        )
+        
+        await self.wait_for_user("About to demonstrate filtering capabilities")
         
         try:
             print("🔍 Advanced filtering capabilities:")
@@ -293,43 +543,43 @@ class TradingRouterTester:
             print(f"❌ Error demonstrating filtering: {e}")
             return False
 
-    async def run_test_suite(self):
-        """Run the complete Trading router test suite."""
-        print("💰 Starting Trading Router Test Suite")
-        print("=" * 50)
+    async def run_interactive_demo(self):
+        """Run the complete Trading router interactive demo."""
+        print("💰 Trading Router Interactive Demo")
+        print("=" * 70)
+        print("This demo will show you how to monitor and manage your trading activity.")
+        print("Perfect for learning trading operations with the Hummingbot API!")
+        print("=" * 70)
         
-        async with HummingbotClient("http://localhost:8000", "admin", "admin") as client:
+        async with HummingbotAPIClient("http://localhost:8000", "admin", "admin") as client:
             self.client = client
             
+            # Overview of functionalities
+            await self.overview_trading_functionalities()
+            
             # Step 1: Check current positions
-            positions = await self.step_1_check_current_positions()
+            positions = await self.demo_get_positions()
             
             # Step 2: Get recent trades
-            trades = await self.step_2_get_recent_trades()
+            trades = await self.demo_get_trades()
             
             # Step 3: Check active orders
-            active_orders = await self.step_3_check_active_orders()
+            active_orders = await self.demo_get_active_orders()
             
             # Step 4: Search historical orders
-            historical_orders = await self.step_4_search_historical_orders()
+            historical_orders = await self.demo_search_orders()
             
             # Step 5: Demonstrate position mode
-            perpetual_available = await self.step_5_demonstrate_position_mode()
+            perpetual_available = await self.demo_position_mode()
             
-            # Step 6: Show trading capabilities
-            trading_accounts = await self.step_6_show_trading_capabilities()
+            # Step 6: Show order placement capabilities
+            trading_accounts = await self.demo_order_placement_info()
             
-            # Step 7: Demonstrate order placement
-            example_order = await self.step_7_demonstrate_order_placement(trading_accounts)
+            # Step 7: Demonstrate filtering
+            await self.demo_filtering_capabilities()
             
-            # Step 8: Show order monitoring
-            await self.step_8_show_order_monitoring()
-            
-            # Step 9: Demonstrate filtering
-            await self.step_9_demonstrate_filtering()
-            
-            print("\n" + "=" * 50)
-            print("✅ Trading Router Test Suite Completed Successfully!")
+            print("\n" + "=" * 70)
+            print("✅ Trading Router Demo Completed!")
             print("\n📝 Summary:")
             print(f"  - Current positions: {len(positions.get('data', []))}")
             print(f"  - Recent trades: {len(trades.get('data', []))}")
@@ -338,26 +588,29 @@ class TradingRouterTester:
             print(f"  - Perpetual trading available: {'Yes' if perpetual_available else 'No'}")
             print(f"  - Trading-ready accounts: {len(trading_accounts)}")
             
+            print("\n🎓 You now know how to monitor and manage trading operations!")
+            print("💡 Try implementing these in your own scripts using the code examples shown.")
+            
             return True
 
 
 async def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description="Test Trading Router functionality")
+    parser = argparse.ArgumentParser(description="Trading Router Interactive Demo")
     parser.add_argument("--interactive", action="store_true", 
                        help="Run in interactive mode with step-by-step explanations")
     args = parser.parse_args()
     
-    tester = TradingRouterTester(interactive=args.interactive)
+    demo = TradingRouterDemo(interactive=args.interactive)
     
     try:
-        success = await tester.run_test_suite()
+        success = await demo.run_interactive_demo()
         sys.exit(0 if success else 1)
     except KeyboardInterrupt:
-        print("\n❌ Test interrupted by user")
+        print("\n❌ Demo interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Test failed with error: {e}")
+        print(f"\n❌ Demo failed with error: {e}")
         sys.exit(1)
 
 
