@@ -20,22 +20,24 @@ pip install -e .
 
 ```python
 import asyncio
-from hummingbot_api_client import HummingbotClient
+from hummingbot_api_client import HummingbotAPIClient
+
 
 async def main():
-    # Using context manager (recommended)
-    async with HummingbotClient("http://localhost:8000", "admin", "admin") as client:
-        # Get portfolio state
-        portfolio = await client.portfolio.get_state()
-        print(f"Portfolio value: ${sum(b['value'] for a in portfolio.values() for c in a.values() for b in c):.2f}")
-        
-        # List available connectors
-        connectors = await client.connectors.list_connectors()
-        print(f"Available connectors: {len(connectors)}")
-        
-        # Check Docker status
-        docker_status = await client.docker.check_docker_running()
-        print(f"Docker running: {docker_status['is_docker_running']}")
+  # Using context manager (recommended)
+  async with HummingbotAPIClient("http://localhost:8000", "admin", "admin") as client:
+    # Get portfolio state
+    portfolio = await client.portfolio.get_state()
+    print(f"Portfolio value: ${sum(b['value'] for a in portfolio.values() for c in a.values() for b in c):.2f}")
+
+    # List available connectors
+    connectors = await client.connectors.list_connectors()
+    print(f"Available connectors: {len(connectors)}")
+
+    # Check Docker status
+    docker_status = await client.docker.is_running()
+    print(f"Docker running: {docker_status['is_docker_running']}")
+
 
 asyncio.run(main())
 ```
