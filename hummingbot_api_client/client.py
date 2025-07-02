@@ -15,17 +15,18 @@ from .routers import (
 )
 
 
-class HummingbotClient:
+class HummingbotAPIClient:
     def __init__(
         self, 
-        base_url: str,
+        base_url: str = "http://localhost:8000",
         username: str = "admin",
         password: str = "admin",
         timeout: Optional[aiohttp.ClientTimeout] = None
     ):
         self.base_url = base_url.rstrip('/')
         self.auth = aiohttp.BasicAuth(username, password)
-        self.timeout = timeout or aiohttp.ClientTimeout(total=30)
+        # Increase default timeout for operations like historical candles
+        self.timeout = timeout or aiohttp.ClientTimeout(total=300)  # 5 minutes
         self._session: Optional[aiohttp.ClientSession] = None
         self._accounts: Optional[AccountsRouter] = None
         self._archived_bots: Optional[ArchivedBotsRouter] = None
