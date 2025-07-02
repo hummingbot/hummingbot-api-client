@@ -1,4 +1,4 @@
-# hummingbot-client
+# hummingbot-api-client
 
 An async Python client for the Hummingbot API with modular router support.
 
