@@ -28,7 +28,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/hummingbot/hummingbot-client"
-Documentation = "https://github.com/hummingbot/hummingbot-client#readme"
-Repository = "https://github.com/hummingbot/hummingbot-client"
-Issues = "https://github.com/hummingbot/hummingbot-client/issues"
+Homepage = "https://github.com/hummingbot/hummingbot-api-client"
+Documentation = "https://github.com/hummingbot/hummingbot-api-client#readme"
+Repository = "https://github.com/hummingbot/hummingbot-api-client"
+Issues = "https://github.com/hummingbot/hummingbot-api-client/issues"
