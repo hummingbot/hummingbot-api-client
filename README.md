@@ -98,38 +98,25 @@ The client provides access to all Hummingbot API functionality through specializ
 
 ## Examples
 
-### Basic Examples
+### Jupyter Notebooks
 
-The `examples/` directory contains comprehensive examples for each router:
+The library includes comprehensive Jupyter notebooks demonstrating usage for each router. These provide interactive, step-by-step tutorials with explanations:
 
-```bash
-# Basic usage demonstrating all features
-python examples/basic_usage.py
-
-# Router-specific examples
-python examples/docker_example.py
-python examples/accounts_example.py
-python examples/trading_example.py
-# ... and more
-```
-
-### Interactive Test Scripts
-
-Comprehensive test scripts with step-by-step demonstrations:
+**Note:** Jupyter notebooks are not included in the repository by default. To run the example notebooks, install Jupyter:
 
 ```bash
-# Run in automatic mode
-python examples/docker_example.py
-python examples/accounts_example.py
-python examples/trading_example.py
-python examples/portfolio_example.py
-python examples/connectors_example.py
-
-# Run in interactive mode (with explanations)
-python examples/docker_example.py --interactive
+pip install jupyter notebook
+# or
+pip install jupyterlab
 ```
 
-Each test script demonstrates the complete functionality of its router with real API calls.
+Example notebooks cover:
+- Basic usage demonstrating all features
+- Router-specific examples (docker, accounts, trading, portfolio, connectors)
+- Advanced patterns and error handling
+- Real-time monitoring and bot management
+
+Each notebook provides interactive demonstrations of the complete functionality with real API calls and detailed explanations.
 
 ## Advanced Usage
 

@@ -20,7 +20,7 @@ jobs:
     
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
-      contents: read
+      contents: write  # IMPORTANT: mandatory for creating releases
     
     steps:
     - name: Checkout code
