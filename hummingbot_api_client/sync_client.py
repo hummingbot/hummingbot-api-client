@@ -62,7 +62,8 @@ class SyncHummingbotAPIClient:
         self._timeout = timeout
         self._async_client: Optional[HummingbotAPIClient] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
-        
+        self._created_loop: bool = False
+
         # Type hints for dynamically created attributes
         if TYPE_CHECKING:
             self.accounts: AccountsRouter
@@ -76,12 +77,19 @@ class SyncHummingbotAPIClient:
             self.portfolio: PortfolioRouter
             self.scripts: ScriptsRouter
             self.trading: TradingRouter
-        
+
     def __enter__(self) -> 'SyncHummingbotAPIClient':
         """Enter context manager and initialize the async client."""
-        self._loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self._loop)
-        
+        # Check if there's already a running event loop
+        try:
+            self._loop = asyncio.get_running_loop()
+            self._created_loop = False
+        except RuntimeError:
+            # No running loop, create a new one
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
+            self._created_loop = True
+
         # Create and initialize the async client
         import aiohttp
         timeout_obj = aiohttp.ClientTimeout(total=self._timeout) if self._timeout else None
@@ -91,20 +99,53 @@ class SyncHummingbotAPIClient:
             self._password,
             timeout=timeout_obj
         )
-        self._loop.run_until_complete(self._async_client.init())
-        
+
+        # Initialize based on whether we created the loop
+        if self._created_loop:
+            self._loop.run_until_complete(self._async_client.init())
+        else:
+            # For existing loop, schedule coroutine as a task
+            import concurrent.futures
+            future = concurrent.futures.Future()
+
+            async def init_wrapper():
+                try:
+                    await self._async_client.init()
+                    future.set_result(None)
+                except Exception as e:
+                    future.set_exception(e)
+
+            asyncio.run_coroutine_threadsafe(init_wrapper(), self._loop)
+            future.result()  # Wait for completion
+
         # Dynamically create sync wrappers for all routers
         self._wrap_routers()
-        
+
         return self
-        
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit context manager and cleanup resources."""
         if self._async_client:
-            self._loop.run_until_complete(self._async_client.close())
-        if self._loop:
+            if self._created_loop:
+                self._loop.run_until_complete(self._async_client.close())
+            else:
+                # For existing loop, use run_coroutine_threadsafe
+                import concurrent.futures
+                future = concurrent.futures.Future()
+
+                async def close_wrapper():
+                    try:
+                        await self._async_client.close()
+                        future.set_result(None)
+                    except Exception as e:
+                        future.set_exception(e)
+
+                asyncio.run_coroutine_threadsafe(close_wrapper(), self._loop)
+                future.result()  # Wait for completion
+
+        if self._created_loop and self._loop:
             self._loop.close()
-            
+
     def _wrap_routers(self):
         """Dynamically wrap all router methods to be synchronous."""
         # List of router attributes on the async client
@@ -113,28 +154,45 @@ class SyncHummingbotAPIClient:
             'connectors', 'controllers', 'docker', 'market_data',
             'portfolio', 'scripts', 'trading'
         ]
-        
+
         for router_name in router_attrs:
             if hasattr(self._async_client, router_name):
                 async_router = getattr(self._async_client, router_name)
-                sync_router = SyncRouterWrapper(async_router, self._loop)
+                sync_router = SyncRouterWrapper(async_router, self._loop, self._created_loop)
                 setattr(self, router_name, sync_router)
 
 
 class SyncRouterWrapper:
     """Wrapper that converts async router methods to sync."""
-    
-    def __init__(self, async_router: Any, loop: asyncio.AbstractEventLoop):
+
+    def __init__(self, async_router: Any, loop: asyncio.AbstractEventLoop, created_loop: bool):
         self._async_router = async_router
         self._loop = loop
-        
+        self._created_loop = created_loop
+
     def __getattr__(self, name: str) -> Any:
         """Dynamically wrap async methods to be synchronous."""
         attr = getattr(self._async_router, name)
-        
+
         if asyncio.iscoroutinefunction(attr):
             def sync_method(*args, **kwargs):
-                return self._loop.run_until_complete(attr(*args, **kwargs))
+                if self._created_loop:
+                    # We created the loop, so we can use run_until_complete
+                    return self._loop.run_until_complete(attr(*args, **kwargs))
+                else:
+                    # Using existing loop, must use run_coroutine_threadsafe
+                    import concurrent.futures
+                    future = concurrent.futures.Future()
+
+                    async def wrapper():
+                        try:
+                            result = await attr(*args, **kwargs)
+                            future.set_result(result)
+                        except Exception as e:
+                            future.set_exception(e)
+
+                    asyncio.run_coroutine_threadsafe(wrapper(), self._loop)
+                    return future.result()
             return sync_method
         
         return attr
