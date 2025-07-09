@@ -113,6 +113,15 @@ class MarketDataRouter(BaseRouter):
             end_time=end_time
         )
     
+    async def get_available_candle_connectors(self) -> List[str]:
+        """
+        Get list of available connectors that support candle data feeds.
+        
+        Returns:
+            List of connector names that can be used for fetching candle data
+        """
+        return await self._get("/market-data/available-candle-connectors")
+    
     async def get_active_feeds(self) -> Dict[str, Any]:
         """Get information about currently active market data feeds."""
         return await self._get("/market-data/active-feeds")
