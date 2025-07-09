@@ -8,7 +8,7 @@ class MarketDataRouter(BaseRouter):
     # Candles Operations
     async def get_candles(
         self,
-        connector: str,
+        connector_name: str,
         trading_pair: str,
         interval: str = "1m",
         max_records: int = 100
@@ -17,7 +17,7 @@ class MarketDataRouter(BaseRouter):
         Get real-time candles data for a specific trading pair.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
             interval: Candle interval (e.g., "1m", "5m", "1h", "1d")
             max_records: Maximum number of candles to return
@@ -26,7 +26,7 @@ class MarketDataRouter(BaseRouter):
             Real-time candles data
         """
         candles_config = {
-            "connector": connector,
+            "connector": connector_name,
             "trading_pair": trading_pair,
             "interval": interval,
             "max_records": max_records
@@ -35,7 +35,7 @@ class MarketDataRouter(BaseRouter):
     
     async def get_historical_candles(
         self,
-        connector: str,
+        connector_name: str,
         trading_pair: str,
         interval: str = "1m",
         start_time: Optional[int] = None,
@@ -45,7 +45,7 @@ class MarketDataRouter(BaseRouter):
         Get historical candles data for a specific trading pair.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
             interval: Candle interval (e.g., "1m", "5m", "1h", "1d")
             start_time: Start timestamp (Unix timestamp in seconds)
@@ -59,7 +59,7 @@ class MarketDataRouter(BaseRouter):
             get_candles_last_days() or higher intervals (5m, 1h) to avoid timeouts.
         """
         config = {
-            "connector_name": connector,
+            "connector_name": connector_name,
             "trading_pair": trading_pair,
             "interval": interval
         }
@@ -72,7 +72,7 @@ class MarketDataRouter(BaseRouter):
     
     async def get_candles_last_days(
         self,
-        connector: str,
+        connector_name: str,
         trading_pair: str,
         days: int,
         interval: str = "1h"
@@ -81,7 +81,7 @@ class MarketDataRouter(BaseRouter):
         Get candles for the last N days.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
             days: Number of days to look back (e.g., 1, 7, 30)
             interval: Candle interval (e.g., "1m", "5m", "1h", "1d")
@@ -106,7 +106,7 @@ class MarketDataRouter(BaseRouter):
         start_time = end_time - (days * 24 * 60 * 60)  # days * seconds_per_day
         
         return await self.get_historical_candles(
-            connector=connector,
+            connector_name=connector_name,
             trading_pair=trading_pair,
             interval=interval,
             start_time=start_time,
@@ -133,14 +133,14 @@ class MarketDataRouter(BaseRouter):
     # Enhanced Market Data Operations
     async def get_prices(
         self, 
-        connector: str, 
+        connector_name: str, 
         trading_pairs: Union[str, List[str]]
     ) -> Dict[str, Any]:
         """
         Get current prices for specified trading pairs from a connector.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pairs: Single trading pair or list of trading pairs (e.g., "BTC-USDT" or ["BTC-USDT", "ETH-USDT"])
             
         Returns:
@@ -154,17 +154,17 @@ class MarketDataRouter(BaseRouter):
             trading_pairs = [trading_pairs]
             
         price_request = {
-            "connector_name": connector,
+            "connector_name": connector_name,
             "trading_pairs": trading_pairs
         }
         return await self._post("/market-data/prices", json=price_request)
     
-    async def get_funding_info(self, connector: str, trading_pair: str) -> Dict[str, Any]:
+    async def get_funding_info(self, connector_name: str, trading_pair: str) -> Dict[str, Any]:
         """
         Get funding information for a perpetual trading pair.
         
         Args:
-            connector: Perpetual exchange connector name (e.g., "binance_perpetual")
+            connector_name: Perpetual exchange connector name (e.g., "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
             
         Returns:
@@ -174,14 +174,14 @@ class MarketDataRouter(BaseRouter):
             funding = await client.market_data.get_funding_info("binance_perpetual", "BTC-USDT")
         """
         funding_request = {
-            "connector_name": connector,
+            "connector_name": connector_name,
             "trading_pair": trading_pair
         }
         return await self._post("/market-data/funding-info", json=funding_request)
     
     async def get_order_book(
         self, 
-        connector: str, 
+        connector_name: str, 
         trading_pair: str, 
         depth: int = 10
     ) -> Dict[str, Any]:
@@ -189,7 +189,7 @@ class MarketDataRouter(BaseRouter):
         Get order book snapshot with specified depth.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
             depth: Number of price levels to return (1-100)
             
@@ -200,7 +200,7 @@ class MarketDataRouter(BaseRouter):
             order_book = await client.market_data.get_order_book("binance", "BTC-USDT", depth=20)
         """
         order_book_request = {
-            "connector_name": connector,
+            "connector_name": connector_name,
             "trading_pair": trading_pair,
             "depth": depth
         }
@@ -209,7 +209,7 @@ class MarketDataRouter(BaseRouter):
     # Order Book Query Operations
     async def get_price_for_volume(
         self, 
-        connector: str, 
+        connector_name: str, 
         trading_pair: str, 
         volume: float, 
         is_buy: bool
@@ -218,7 +218,7 @@ class MarketDataRouter(BaseRouter):
         Get the price required to fill a specific volume on the order book.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
             volume: Volume to fill (in base asset)
             is_buy: True for buy side, False for sell side
@@ -231,7 +231,7 @@ class MarketDataRouter(BaseRouter):
             result = await client.market_data.get_price_for_volume("binance", "BTC-USDT", 1.0, True)
         """
         request = {
-            "connector_name": connector,
+            "connector_name": connector_name,
             "trading_pair": trading_pair,
             "volume": volume,
             "is_buy": is_buy
@@ -240,7 +240,7 @@ class MarketDataRouter(BaseRouter):
     
     async def get_volume_for_price(
         self, 
-        connector: str, 
+        connector_name: str, 
         trading_pair: str, 
         price: float, 
         is_buy: bool
@@ -249,7 +249,7 @@ class MarketDataRouter(BaseRouter):
         Get the volume available at a specific price level on the order book.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
             price: Price level to query
             is_buy: True for buy side, False for sell side
@@ -262,7 +262,7 @@ class MarketDataRouter(BaseRouter):
             result = await client.market_data.get_volume_for_price("binance", "BTC-USDT", 50000.0, True)
         """
         request = {
-            "connector_name": connector,
+            "connector_name": connector_name,
             "trading_pair": trading_pair,
             "price": price,
             "is_buy": is_buy
@@ -271,7 +271,7 @@ class MarketDataRouter(BaseRouter):
     
     async def get_price_for_quote_volume(
         self, 
-        connector: str, 
+        connector_name: str, 
         trading_pair: str, 
         quote_volume: float, 
         is_buy: bool
@@ -280,7 +280,7 @@ class MarketDataRouter(BaseRouter):
         Get the price required to fill a specific quote volume on the order book.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
             quote_volume: Quote volume to fill (in quote asset, e.g., USDT)
             is_buy: True for buy side, False for sell side
@@ -293,7 +293,7 @@ class MarketDataRouter(BaseRouter):
             result = await client.market_data.get_price_for_quote_volume("binance", "BTC-USDT", 10000.0, True)
         """
         request = {
-            "connector_name": connector,
+            "connector_name": connector_name,
             "trading_pair": trading_pair,
             "quote_volume": quote_volume,
             "is_buy": is_buy
@@ -302,7 +302,7 @@ class MarketDataRouter(BaseRouter):
     
     async def get_quote_volume_for_price(
         self, 
-        connector: str, 
+        connector_name: str, 
         trading_pair: str, 
         price: float, 
         is_buy: bool
@@ -311,7 +311,7 @@ class MarketDataRouter(BaseRouter):
         Get the quote volume available at a specific price level on the order book.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
             price: Price level to query
             is_buy: True for buy side, False for sell side
@@ -324,7 +324,7 @@ class MarketDataRouter(BaseRouter):
             result = await client.market_data.get_quote_volume_for_price("binance", "BTC-USDT", 50000.0, True)
         """
         request = {
-            "connector_name": connector,
+            "connector_name": connector_name,
             "trading_pair": trading_pair,
             "price": price,
             "is_buy": is_buy
@@ -333,7 +333,7 @@ class MarketDataRouter(BaseRouter):
     
     async def get_vwap_for_volume(
         self, 
-        connector: str, 
+        connector_name: str, 
         trading_pair: str, 
         volume: float, 
         is_buy: bool
@@ -342,7 +342,7 @@ class MarketDataRouter(BaseRouter):
         Get the VWAP (Volume Weighted Average Price) for a specific volume on the order book.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
             volume: Volume to calculate VWAP for (in base asset)
             is_buy: True for buy side, False for sell side
@@ -355,7 +355,7 @@ class MarketDataRouter(BaseRouter):
             result = await client.market_data.get_vwap_for_volume("binance", "BTC-USDT", 1.0, True)
         """
         request = {
-            "connector_name": connector,
+            "connector_name": connector_name,
             "trading_pair": trading_pair,
             "volume": volume,
             "is_buy": is_buy
