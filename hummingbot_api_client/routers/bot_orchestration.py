@@ -10,6 +10,63 @@ class BotOrchestrationRouter(BaseRouter):
         """Get the status of all active bots."""
         return await self._get("/bot-orchestration/status")
     
+    async def get_bot_runs(
+        self,
+        bot_name: Optional[str] = None,
+        account_name: Optional[str] = None,
+        strategy_type: Optional[str] = None,
+        strategy_name: Optional[str] = None,
+        run_status: Optional[str] = None,
+        deployment_status: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """
+        Get bot runs with optional filtering.
+        
+        Args:
+            bot_name: Filter by bot name
+            account_name: Filter by account name
+            strategy_type: Filter by strategy type (script or controller)
+            strategy_name: Filter by strategy name
+            run_status: Filter by run status (CREATED, RUNNING, STOPPED, ERROR)
+            deployment_status: Filter by deployment status (DEPLOYED, FAILED, ARCHIVED)
+            limit: Maximum number of results to return
+            offset: Number of results to skip
+            
+        Returns:
+            Dictionary with bot runs data including total count and pagination info
+            
+        Example:
+            # Get all bot runs
+            result = await client.bot_orchestration.get_bot_runs()
+            
+            # Get bot runs with filtering
+            result = await client.bot_orchestration.get_bot_runs(
+                bot_name="my_bot",
+                run_status="RUNNING",
+                limit=50
+            )
+        """
+        params = {
+            "limit": limit,
+            "offset": offset
+        }
+        if bot_name is not None:
+            params["bot_name"] = bot_name
+        if account_name is not None:
+            params["account_name"] = account_name
+        if strategy_type is not None:
+            params["strategy_type"] = strategy_type
+        if strategy_name is not None:
+            params["strategy_name"] = strategy_name
+        if run_status is not None:
+            params["run_status"] = run_status
+        if deployment_status is not None:
+            params["deployment_status"] = deployment_status
+            
+        return await self._get("/bot-orchestration/bot-runs", params=params)
+    
     async def get_mqtt_status(self) -> Dict[str, Any]:
         """Get MQTT connection status and discovered bots."""
         return await self._get("/bot-orchestration/mqtt")
