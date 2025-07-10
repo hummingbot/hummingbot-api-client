@@ -11,7 +11,7 @@ class TradingRouter(BaseRouter):
         account_name: str,
         connector_name: str,
         trading_pair: str,
-        side: str,
+        trade_type: str,
         amount: float,
         order_type: str = "MARKET",
         price: Optional[float] = None,
@@ -24,7 +24,7 @@ class TradingRouter(BaseRouter):
             account_name: Account to trade with (e.g., "master_account")
             connector_name: Exchange connector (e.g., "binance", "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
-            side: "BUY" or "SELL"
+            trade_type: "BUY" or "SELL"
             amount: Amount to trade (in base currency)
             order_type: "MARKET", "LIMIT", or "LIMIT_MAKER" (default: "MARKET")
             price: Price for limit orders (required for LIMIT orders)
@@ -49,7 +49,7 @@ class TradingRouter(BaseRouter):
             "account_name": account_name,
             "connector_name": connector_name,
             "trading_pair": trading_pair,
-            "trade_type": side,
+            "trade_type": trade_type,
             "amount": amount,
             "order_type": order_type,
             "position_action": position_action
