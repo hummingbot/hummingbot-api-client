@@ -26,7 +26,7 @@ class MarketDataRouter(BaseRouter):
             Real-time candles data
         """
         candles_config = {
-            "connector": connector_name,
+            "connector_name": connector_name,
             "trading_pair": trading_pair,
             "interval": interval,
             "max_records": max_records
