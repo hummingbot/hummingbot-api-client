@@ -4,27 +4,27 @@ from .base import BaseRouter
 
 class BotOrchestrationRouter(BaseRouter):
     """Bot Orchestration router for bot lifecycle management and MQTT operations."""
-    
+
     # Bot Status Operations
     async def get_active_bots_status(self) -> Dict[str, Any]:
         """Get the status of all active bots."""
         return await self._get("/bot-orchestration/status")
-    
+
     async def get_mqtt_status(self) -> Dict[str, Any]:
         """Get MQTT connection status and discovered bots."""
         return await self._get("/bot-orchestration/mqtt")
-    
+
     async def get_bot_status(self, bot_name: str) -> Dict[str, Any]:
         """Get the status of a specific bot."""
         return await self._get(f"/bot-orchestration/{bot_name}/status")
-    
+
     async def get_bot_history(
-        self,
-        bot_name: str,
-        days: int = 0,
-        verbose: bool = False,
-        precision: Optional[int] = None,
-        timeout: float = 30.0
+            self,
+            bot_name: str,
+            days: int = 0,
+            verbose: bool = False,
+            precision: Optional[int] = None,
+            timeout: float = 30.0
     ) -> Dict[str, Any]:
         """Get trading history for a bot with optional parameters."""
         params = {
@@ -35,15 +35,15 @@ class BotOrchestrationRouter(BaseRouter):
         if precision is not None:
             params["precision"] = precision
         return await self._get(f"/bot-orchestration/{bot_name}/history", params=params)
-    
+
     # Bot Control Operations
     async def start_bot(
-        self,
-        bot_name: str,
-        log_level: Optional[str] = None,
-        script: Optional[str] = None,
-        conf: Optional[str] = None,
-        async_backend: bool = False
+            self,
+            bot_name: str,
+            log_level: Optional[str] = None,
+            script: Optional[str] = None,
+            conf: Optional[str] = None,
+            async_backend: bool = False
     ) -> Dict[str, Any]:
         """
         Start a bot with the specified configuration.
@@ -80,14 +80,14 @@ class BotOrchestrationRouter(BaseRouter):
             start_bot_action["script"] = script
         if conf is not None:
             start_bot_action["conf"] = conf
-            
+
         return await self._post("/bot-orchestration/start-bot", json=start_bot_action)
-    
+
     async def stop_bot(
-        self,
-        bot_name: str,
-        skip_order_cancellation: bool = False,
-        async_backend: bool = False
+            self,
+            bot_name: str,
+            skip_order_cancellation: bool = False,
+            async_backend: bool = False
     ) -> Dict[str, Any]:
         """
         Stop a bot with the specified configuration.
@@ -116,13 +116,13 @@ class BotOrchestrationRouter(BaseRouter):
             "async_backend": async_backend
         }
         return await self._post("/bot-orchestration/stop-bot", json=stop_bot_action)
-    
+
     async def stop_and_archive_bot(
-        self,
-        bot_name: str,
-        skip_order_cancellation: bool = True,
-        archive_locally: bool = True,
-        s3_bucket: Optional[str] = None
+            self,
+            bot_name: str,
+            skip_order_cancellation: bool = True,
+            archive_locally: bool = True,
+            s3_bucket: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Gracefully stop a bot and archive its data in the background.
@@ -164,15 +164,15 @@ class BotOrchestrationRouter(BaseRouter):
         if s3_bucket:
             params["s3_bucket"] = s3_bucket
         return await self._post(url, params=params)
-    
+
     # Bot Deployment Operations
     async def deploy_v2_script(
-        self,
-        instance_name: str,
-        credentials_profile: str,
-        script: Optional[str] = None,
-        script_config: Optional[str] = None,
-        image: str = "hummingbot/hummingbot:latest"
+            self,
+            instance_name: str,
+            credentials_profile: str,
+            script: Optional[str] = None,
+            script_config: Optional[str] = None,
+            image: str = "hummingbot/hummingbot:latest"
     ) -> Dict[str, Any]:
         """
         Creates and autostart a v2 script with a configuration if present.
@@ -205,17 +205,17 @@ class BotOrchestrationRouter(BaseRouter):
             script_deployment["script"] = script
         if script_config is not None:
             script_deployment["script_config"] = script_config
-            
+
         return await self._post("/bot-orchestration/deploy-v2-script", json=script_deployment)
-    
+
     async def deploy_v2_controllers(
-        self,
-        instance_name: str,
-        credentials_profile: str,
-        controllers_config: List[str],
-        max_global_drawdown_quote: Optional[float] = None,
-        max_controller_drawdown_quote: Optional[float] = None,
-        image: str = "hummingbot/hummingbot:latest"
+            self,
+            instance_name: str,
+            credentials_profile: str,
+            controllers_config: List[str],
+            max_global_drawdown_quote: Optional[float] = None,
+            max_controller_drawdown_quote: Optional[float] = None,
+            image: str = "hummingbot/hummingbot:latest"
     ) -> Dict[str, Any]:
         """
         Deploy a V2 strategy with controllers by generating the script config and creating the instance.
@@ -251,14 +251,14 @@ class BotOrchestrationRouter(BaseRouter):
             controller_deployment["max_global_drawdown_quote"] = max_global_drawdown_quote
         if max_controller_drawdown_quote is not None:
             controller_deployment["max_controller_drawdown_quote"] = max_controller_drawdown_quote
-            
+
         return await self._post("/bot-orchestration/deploy-v2-controllers", json=controller_deployment)
-    
+
     # Convenience methods for common operations
     async def restart_bot(
-        self,
-        bot_name: str,
-        skip_order_cancellation: bool = False
+            self,
+            bot_name: str,
+            skip_order_cancellation: bool = False
     ) -> Dict[str, Any]:
         """
         Restart a bot by stopping and then starting it again.
@@ -275,28 +275,29 @@ class BotOrchestrationRouter(BaseRouter):
         """
         # First stop the bot
         stop_result = await self.stop_bot(bot_name, skip_order_cancellation)
-        
+
         if not stop_result.get("status") == "success":
             return {
                 "status": "error",
                 "message": "Failed to stop bot",
                 "stop_result": stop_result
             }
-        
+
         # Then start the bot
         start_result = await self.start_bot(bot_name)
-        
+
         return {
             "status": "success" if start_result.get("status") == "success" else "error",
-            "message": "Bot restarted successfully" if start_result.get("status") == "success" else "Failed to start bot after stopping",
+            "message": "Bot restarted successfully" if start_result.get(
+                "status") == "success" else "Failed to start bot after stopping",
             "stop_result": stop_result,
             "start_result": start_result
         }
-    
+
     async def get_bot_performance(
-        self,
-        bot_name: str,
-        days: int = 7
+            self,
+            bot_name: str,
+            days: int = 7
     ) -> Dict[str, Any]:
         """
         Get bot performance metrics for a specific time period.
@@ -317,10 +318,10 @@ class BotOrchestrationRouter(BaseRouter):
         """
         # Get bot status for current metrics
         status = await self.get_bot_status(bot_name)
-        
+
         # Get historical performance
         history = await self.get_bot_history(bot_name, days=days, verbose=True)
-        
+
         return {
             "bot_name": bot_name,
             "period_days": days,
@@ -328,7 +329,7 @@ class BotOrchestrationRouter(BaseRouter):
             "trading_history": history,
             "timestamp": status.get("data", {}).get("timestamp") if status.get("status") == "success" else None
         }
-    
+
     async def list_all_bots(self) -> Dict[str, Any]:
         """
         Get a comprehensive list of all bots including active, discovered, and MQTT status.
@@ -341,16 +342,76 @@ class BotOrchestrationRouter(BaseRouter):
         """
         # Get active bots status
         active_status = await self.get_active_bots_status()
-        
+
         # Get MQTT status and discovered bots
         mqtt_status = await self.get_mqtt_status()
-        
+
         return {
             "active_bots": active_status,
             "mqtt_status": mqtt_status,
             "summary": {
-                "total_active_bots": len(mqtt_status.get("data", {}).get("active_bots", [])) if mqtt_status.get("status") == "success" else 0,
-                "total_discovered_bots": len(mqtt_status.get("data", {}).get("discovered_bots", [])) if mqtt_status.get("status") == "success" else 0,
-                "mqtt_connected": mqtt_status.get("data", {}).get("mqtt_connected", False) if mqtt_status.get("status") == "success" else False
+                "total_active_bots": len(mqtt_status.get("data", {}).get("active_bots", [])) if mqtt_status.get(
+                    "status") == "success" else 0,
+                "total_discovered_bots": len(mqtt_status.get("data", {}).get("discovered_bots", [])) if mqtt_status.get(
+                    "status") == "success" else 0,
+                "mqtt_connected": mqtt_status.get("data", {}).get("mqtt_connected", False) if mqtt_status.get(
+                    "status") == "success" else False
             }
         }
+
+    async def get_bot_runs(
+            self,
+            bot_name: Optional[str] = None,
+            account_name: Optional[str] = None,
+            strategy_type: Optional[str] = None,
+            strategy_name: Optional[str] = None,
+            run_status: Optional[str] = None,
+            deployment_status: Optional[str] = None,
+            limit: int = 100,
+            offset: int = 0
+    ) -> Dict[str, Any]:
+        """
+        Get bot runs with optional filtering.
+
+        Args:
+            bot_name: Filter by bot name
+            account_name: Filter by account name
+            strategy_type: Filter by strategy type (script or controller)
+            strategy_name: Filter by strategy name
+            run_status: Filter by run status (CREATED, RUNNING, STOPPED, ERROR)
+            deployment_status: Filter by deployment status (DEPLOYED, FAILED, ARCHIVED)
+            limit: Maximum number of results to return
+            offset: Number of results to skip
+
+        Returns:
+            Dictionary with bot runs data including total count and pagination info
+
+        Example:
+            # Get all bot runs
+            result = await client.bot_orchestration.get_bot_runs()
+
+            # Get bot runs with filtering
+            result = await client.bot_orchestration.get_bot_runs(
+                bot_name="my_bot",
+                run_status="RUNNING",
+                limit=50
+            )
+        """
+        params = {
+            "limit": limit,
+            "offset": offset
+        }
+        if bot_name is not None:
+            params["bot_name"] = bot_name
+        if account_name is not None:
+            params["account_name"] = account_name
+        if strategy_type is not None:
+            params["strategy_type"] = strategy_type
+        if strategy_name is not None:
+            params["strategy_name"] = strategy_name
+        if run_status is not None:
+            params["run_status"] = run_status
+        if deployment_status is not None:
+            params["deployment_status"] = deployment_status
+
+        return await self._get("/bot-orchestration/bot-runs", params=params)

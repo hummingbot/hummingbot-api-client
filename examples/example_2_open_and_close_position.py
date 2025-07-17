@@ -35,7 +35,7 @@ async def open_and_close_a_position(hbot_client: HummingbotAPIClient, interval: 
         connector_name="binance_perpetual",
         trading_pair="ERA-USDT",
         order_type="MARKET",
-        side="BUY",
+        trade_type="BUY",
         amount=amount_in_era,
         position_action="OPEN",
     )
@@ -46,7 +46,7 @@ async def open_and_close_a_position(hbot_client: HummingbotAPIClient, interval: 
         connector_name="binance_perpetual",
         trading_pair="ERA-USDT",
         order_type="MARKET",
-        side="SELL",
+        trade_type="SELL",
         amount=amount_in_era,
         position_action="OPEN",
     )
@@ -60,7 +60,7 @@ async def open_and_close_a_position(hbot_client: HummingbotAPIClient, interval: 
         connector_name="binance_perpetual",
         trading_pair="ERA-USDT",
         order_type="MARKET",
-        side="SELL",
+        trade_type="SELL",
         amount=amount_in_era,
         position_action="CLOSE",
     )
@@ -71,7 +71,7 @@ async def open_and_close_a_position(hbot_client: HummingbotAPIClient, interval: 
         connector_name="binance_perpetual",
         trading_pair="ERA-USDT",
         order_type="MARKET",
-        side="BUY",
+        trade_type="BUY",
         amount=amount_in_era,
         position_action="CLOSE",
     )

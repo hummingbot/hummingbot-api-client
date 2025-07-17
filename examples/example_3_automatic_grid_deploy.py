@@ -129,7 +129,7 @@ def generate_aggressive_and_conservative_configs(candles, trading_pair, aggressi
         start_price=aggressive_start,
         end_price=aggressive_end,
         limit_price=aggressive_limit,
-        side=aggressive_side,
+        trade_type=aggressive_side,
     )
 
     conservative_config = create_grid_strategy_config(
@@ -138,7 +138,7 @@ def generate_aggressive_and_conservative_configs(candles, trading_pair, aggressi
         start_price=conservative_start,
         end_price=conservative_end,
         limit_price=conservative_limit,
-        side=conservative_side,
+        trade_type=conservative_side,
     )
 
     return aggressive_config, conservative_config
