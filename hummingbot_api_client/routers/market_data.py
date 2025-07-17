@@ -8,7 +8,7 @@ class MarketDataRouter(BaseRouter):
     # Candles Operations
     async def get_candles(
         self,
-        connector: str,
+        connector_name: str,
         trading_pair: str,
         interval: str = "1m",
         max_records: int = 100
@@ -17,7 +17,7 @@ class MarketDataRouter(BaseRouter):
         Get real-time candles data for a specific trading pair.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pair: Trading pair (e.g., "BTC-USDT")
             interval: Candle interval (e.g., "1m", "5m", "1h", "1d")
             max_records: Maximum number of candles to return
@@ -26,7 +26,7 @@ class MarketDataRouter(BaseRouter):
             Real-time candles data
         """
         candles_config = {
-            "connector": connector,
+            "connector_name": connector_name,
             "trading_pair": trading_pair,
             "interval": interval,
             "max_records": max_records
