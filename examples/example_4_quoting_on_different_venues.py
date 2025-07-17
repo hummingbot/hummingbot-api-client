@@ -21,7 +21,7 @@ async def quoting_on_multiple_exchanges(hbot_client: HummingbotAPIClient, bot: B
             trading_pair = "WLD-USDT"
             quote_volume = 200000.0
             tasks = [hbot_client.market_data.get_price_for_quote_volume(
-                connector=connector, trading_pair=trading_pair, quote_volume=quote_volume, is_buy=True) for connector in connectors_to_quote]
+                connector_name=connector, trading_pair=trading_pair, quote_volume=quote_volume, is_buy=True) for connector in connectors_to_quote]
             prices = await asyncio.gather(*tasks)
             message = f"📈 *Quoting on Multiple Exchanges*\n\n"
             for connector, price in zip(connectors_to_quote, prices):

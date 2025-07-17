@@ -26,7 +26,7 @@ async def open_and_close_a_position(hbot_client: HummingbotAPIClient, interval: 
 
 
     # 3: Convert 100 USDT to ERA
-    price = await hbot_client.market_data.get_prices(connector="binance_perpetual", trading_pairs="ERA-USDT")
+    price = await hbot_client.market_data.get_prices(connector_name="binance_perpetual", trading_pairs="ERA-USDT")
     amount_in_era = 100 / price["prices"]["ERA-USDT"]
 
     # 4: Open a long position on ERA-USDT on Binance perpetual with 100 USDT
