@@ -92,7 +92,8 @@ class PortfolioRouter(BaseRouter):
     
     async def get_distribution(
         self,
-        account_names: Optional[List[str]] = None
+        account_names: Optional[List[str]] = None,
+        connector_names: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
         Get portfolio distribution by tokens with percentages.
@@ -115,6 +116,8 @@ class PortfolioRouter(BaseRouter):
         filter_request = {}
         if account_names is not None:
             filter_request["account_names"] = account_names
+        if connector_names is not None:
+            filter_request["connector_names"] = connector_names
             
         return await self._post("/portfolio/distribution", json=filter_request)
     
