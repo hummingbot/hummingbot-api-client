@@ -140,7 +140,7 @@ class MarketDataRouter(BaseRouter):
         Get current prices for specified trading pairs from a connector.
         
         Args:
-            connector: Exchange connector name (e.g., "binance", "binance_perpetual")
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
             trading_pairs: Single trading pair or list of trading pairs (e.g., "BTC-USDT" or ["BTC-USDT", "ETH-USDT"])
             
         Returns:
