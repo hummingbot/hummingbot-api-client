@@ -30,6 +30,14 @@ class ControllersRouter(BaseRouter):
     async def get_controller_config_template(self, controller_type: str, controller_name: str) -> Dict[str, Any]:
         """Get controller configuration template with default values."""
         return await self._get(f"/controllers/{controller_type}/{controller_name}/config/template")
+
+    async def validate_controller_config(self,
+        controller_type: str,
+        controller_name: str,
+        config: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Validate controller configuration against the template."""
+        return await self._post(f"/controllers/{controller_type}/{controller_name}/config/validate", json=config)
     
     # Controller Configuration Operations
     async def list_controller_configs(self) -> List[Dict]:
