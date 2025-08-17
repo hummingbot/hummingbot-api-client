@@ -35,11 +35,11 @@ class DockerRouter(BaseRouter):
     
     async def start_container(self, container_name: str) -> Dict[str, Any]:
         """Start a stopped container."""
-        return await self._post(f"/docker/container/{container_name}/start")
+        return await self._post(f"/docker/start-container/{container_name}")
     
     async def stop_container(self, container_name: str) -> Dict[str, Any]:
         """Stop a running container."""
-        return await self._post(f"/docker/container/{container_name}/stop")
+        return await self._post(f"/docker/stop-container/{container_name}")
     
     async def remove_container(self, container_name: str, force: bool = False) -> Dict[str, Any]:
         """Remove a container."""
