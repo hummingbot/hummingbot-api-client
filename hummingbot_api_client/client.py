@@ -8,6 +8,8 @@ from .routers import (
     ConnectorsRouter,
     ControllersRouter,
     DockerRouter,
+    GatewayRouter,
+    GatewayTradingRouter,
     MarketDataRouter,
     PortfolioRouter,
     ScriptsRouter,
@@ -35,6 +37,8 @@ class HummingbotAPIClient:
         self._connectors: Optional[ConnectorsRouter] = None
         self._controllers: Optional[ControllersRouter] = None
         self._docker: Optional[DockerRouter] = None
+        self._gateway: Optional[GatewayRouter] = None
+        self._gateway_trading: Optional[GatewayTradingRouter] = None
         self._market_data: Optional[MarketDataRouter] = None
         self._portfolio: Optional[PortfolioRouter] = None
         self._scripts: Optional[ScriptsRouter] = None
@@ -54,6 +58,8 @@ class HummingbotAPIClient:
             self._connectors = ConnectorsRouter(self._session, self.base_url)
             self._controllers = ControllersRouter(self._session, self.base_url)
             self._docker = DockerRouter(self._session, self.base_url)
+            self._gateway = GatewayRouter(self._session, self.base_url)
+            self._gateway_trading = GatewayTradingRouter(self._session, self.base_url)
             self._market_data = MarketDataRouter(self._session, self.base_url)
             self._portfolio = PortfolioRouter(self._session, self.base_url)
             self._scripts = ScriptsRouter(self._session, self.base_url)
@@ -71,6 +77,8 @@ class HummingbotAPIClient:
             self._connectors = None
             self._controllers = None
             self._docker = None
+            self._gateway = None
+            self._gateway_trading = None
             self._market_data = None
             self._portfolio = None
             self._scripts = None
@@ -124,7 +132,21 @@ class HummingbotAPIClient:
         if self._docker is None:
             raise RuntimeError("Client not initialized. Call await client.init() first.")
         return self._docker
-    
+
+    @property
+    def gateway(self) -> GatewayRouter:
+        """Access the gateway router."""
+        if self._gateway is None:
+            raise RuntimeError("Client not initialized. Call await client.init() first.")
+        return self._gateway
+
+    @property
+    def gateway_trading(self) -> GatewayTradingRouter:
+        """Access the gateway trading router."""
+        if self._gateway_trading is None:
+            raise RuntimeError("Client not initialized. Call await client.init() first.")
+        return self._gateway_trading
+
     @property
     def market_data(self) -> MarketDataRouter:
         """Access the market data router."""
