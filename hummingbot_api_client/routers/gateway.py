@@ -29,6 +29,21 @@ class GatewayRouter(BaseRouter):
         """Stop Gateway container."""
         return await self._post("/gateway/stop")
 
+    async def restart(self, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Restart Gateway container.
+
+        If config is provided, the container will be removed and recreated with new configuration.
+        If no config is provided, the container will be stopped and started with existing configuration.
+
+        Args:
+            config: Optional Gateway configuration dict with keys like:
+                - image: Docker image name
+                - port: Port to expose
+                - environment: Environment variables
+        """
+        return await self._post("/gateway/restart", json=config if config else None)
+
     async def get_logs(self, tail: int = 100) -> Dict[str, Any]:
         """
         Get Gateway container logs.
