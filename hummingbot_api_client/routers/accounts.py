@@ -38,3 +38,41 @@ class AccountsRouter(BaseRouter):
     async def delete_credential(self, account_name: str, connector_name: str) -> Dict[str, Any]:
         """Delete connector credentials for an account."""
         return await self._post(f"/accounts/delete-credential/{account_name}/{connector_name}")
+
+    # Gateway Wallet Management
+    async def add_gateway_wallet(
+        self,
+        chain: str,
+        private_key: str
+    ) -> Dict[str, Any]:
+        """
+        Add a wallet to Gateway. Gateway handles encryption and storage internally.
+
+        Args:
+            chain: Blockchain chain (e.g., 'solana', 'ethereum')
+            private_key: Private key for the wallet
+
+        Returns:
+            Wallet information from Gateway including address
+        """
+        return await self._post(
+            "/gateway/add-wallet",
+            json={"chain": chain, "private_key": private_key}
+        )
+
+    async def remove_gateway_wallet(
+        self,
+        chain: str,
+        address: str
+    ) -> Dict[str, Any]:
+        """
+        Remove a wallet from Gateway.
+
+        Args:
+            chain: Blockchain chain (e.g., 'solana', 'ethereum')
+            address: Wallet address to remove
+
+        Returns:
+            Success message
+        """
+        return await self._delete(f"/gateway/{chain}/{address}")
