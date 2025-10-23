@@ -56,7 +56,7 @@ class AccountsRouter(BaseRouter):
             Wallet information from Gateway including address
         """
         return await self._post(
-            "/gateway/add-wallet",
+            "accounts/gateway/add-wallet",
             json={"chain": chain, "private_key": private_key}
         )
 
@@ -75,4 +75,4 @@ class AccountsRouter(BaseRouter):
         Returns:
             Success message
         """
-        return await self._delete(f"/gateway/{chain}/{address}")
+        return await self._delete(f"accounts/gateway/{chain}/{address}")
