@@ -13,6 +13,9 @@ if TYPE_CHECKING:
     from .routers.connectors import ConnectorsRouter
     from .routers.controllers import ControllersRouter
     from .routers.docker import DockerRouter
+    from .routers.gateway import GatewayRouter
+    from .routers.gateway_swap import GatewaySwapRouter
+    from .routers.gateway_clmm import GatewayCLMMRouter
     from .routers.market_data import MarketDataRouter
     from .routers.portfolio import PortfolioRouter
     from .routers.scripts import ScriptsRouter
@@ -73,6 +76,9 @@ class SyncHummingbotAPIClient:
             self.connectors: ConnectorsRouter
             self.controllers: ControllersRouter
             self.docker: DockerRouter
+            self.gateway: GatewayRouter
+            self.gateway_swap: GatewaySwapRouter
+            self.gateway_clmm: GatewayCLMMRouter
             self.market_data: MarketDataRouter
             self.portfolio: PortfolioRouter
             self.scripts: ScriptsRouter
@@ -151,8 +157,8 @@ class SyncHummingbotAPIClient:
         # List of router attributes on the async client
         router_attrs = [
             'accounts', 'archived_bots', 'backtesting', 'bot_orchestration',
-            'connectors', 'controllers', 'docker', 'market_data',
-            'portfolio', 'scripts', 'trading'
+            'connectors', 'controllers', 'docker', 'gateway', 'gateway_swap',
+            'gateway_clmm', 'market_data', 'portfolio', 'scripts', 'trading'
         ]
 
         for router_name in router_attrs:

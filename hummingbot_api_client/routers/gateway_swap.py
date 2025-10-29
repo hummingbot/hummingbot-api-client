@@ -3,12 +3,10 @@ from decimal import Decimal
 from .base import BaseRouter
 
 
-class GatewayTradingRouter(BaseRouter):
-    """Gateway Trading router for DEX trading operations via Hummingbot Gateway."""
-
-    # ============================================
-    # Swap Operations (Router: Jupiter, 0x)
-    # ============================================
+class GatewaySwapRouter(BaseRouter):
+    """Gateway Swap router for DEX swap operations via Hummingbot Gateway.
+    Supports Router connectors (Jupiter, 0x) for token swaps.
+    """
 
     async def get_swap_quote(
         self,
@@ -34,7 +32,7 @@ class GatewayTradingRouter(BaseRouter):
             Quote with price, expected output amount, and gas estimate
 
         Example:
-            quote = await client.gateway_trading.get_swap_quote(
+            quote = await client.gateway_swap.get_swap_quote(
                 connector='jupiter',
                 network='solana-mainnet-beta',
                 trading_pair='SOL-USDC',
@@ -79,7 +77,7 @@ class GatewayTradingRouter(BaseRouter):
             Transaction hash and swap details
 
         Example:
-            result = await client.gateway_trading.execute_swap(
+            result = await client.gateway_swap.execute_swap(
                 connector='jupiter',
                 network='solana-mainnet-beta',
                 trading_pair='SOL-USDC',
@@ -102,10 +100,6 @@ class GatewayTradingRouter(BaseRouter):
 
         return await self._post("/gateway/swap/execute", json=request_data)
 
-    # ============================================
-    # Query Endpoints for Swaps and Positions
-    # ============================================
-
     async def get_swap_status(
         self,
         transaction_hash: str
@@ -120,7 +114,7 @@ class GatewayTradingRouter(BaseRouter):
             Swap details including current status
 
         Example:
-            swap = await client.gateway_trading.get_swap_status(
+            swap = await client.gateway_swap.get_swap_status(
                 transaction_hash='5X...'
             )
             print(f"Status: {swap['status']}")
@@ -157,7 +151,7 @@ class GatewayTradingRouter(BaseRouter):
             Paginated list of swaps with pagination metadata
 
         Example:
-            results = await client.gateway_trading.search_swaps(
+            results = await client.gateway_swap.search_swaps(
                 network='solana-mainnet-beta',
                 connector='jupiter',
                 status='CONFIRMED',
@@ -206,7 +200,7 @@ class GatewayTradingRouter(BaseRouter):
             Summary statistics including volume, fees, success rate
 
         Example:
-            summary = await client.gateway_trading.get_swaps_summary(
+            summary = await client.gateway_swap.get_swaps_summary(
                 network='solana-mainnet-beta',
                 wallet_address='ABC...'
             )

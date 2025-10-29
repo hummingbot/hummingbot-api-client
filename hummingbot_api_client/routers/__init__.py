@@ -7,7 +7,8 @@ from .connectors import ConnectorsRouter
 from .controllers import ControllersRouter
 from .docker import DockerRouter
 from .gateway import GatewayRouter
-from .gateway_trading import GatewayTradingRouter
+from .gateway_swap import GatewaySwapRouter
+from .gateway_clmm import GatewayCLMMRouter
 from .market_data import MarketDataRouter
 from .portfolio import PortfolioRouter
 from .scripts import ScriptsRouter
@@ -23,7 +24,8 @@ __all__ = [
     "ControllersRouter",
     "DockerRouter",
     "GatewayRouter",
-    "GatewayTradingRouter",
+    "GatewaySwapRouter",
+    "GatewayCLMMRouter",
     "MarketDataRouter",
     "PortfolioRouter",
     "ScriptsRouter",
