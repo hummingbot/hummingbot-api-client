@@ -9,7 +9,8 @@ from .routers import (
     ControllersRouter,
     DockerRouter,
     GatewayRouter,
-    GatewayTradingRouter,
+    GatewaySwapRouter,
+    GatewayCLMMRouter,
     MarketDataRouter,
     PortfolioRouter,
     ScriptsRouter,
@@ -38,7 +39,8 @@ class HummingbotAPIClient:
         self._controllers: Optional[ControllersRouter] = None
         self._docker: Optional[DockerRouter] = None
         self._gateway: Optional[GatewayRouter] = None
-        self._gateway_trading: Optional[GatewayTradingRouter] = None
+        self._gateway_swap: Optional[GatewaySwapRouter] = None
+        self._gateway_clmm: Optional[GatewayCLMMRouter] = None
         self._market_data: Optional[MarketDataRouter] = None
         self._portfolio: Optional[PortfolioRouter] = None
         self._scripts: Optional[ScriptsRouter] = None
@@ -59,7 +61,8 @@ class HummingbotAPIClient:
             self._controllers = ControllersRouter(self._session, self.base_url)
             self._docker = DockerRouter(self._session, self.base_url)
             self._gateway = GatewayRouter(self._session, self.base_url)
-            self._gateway_trading = GatewayTradingRouter(self._session, self.base_url)
+            self._gateway_swap = GatewaySwapRouter(self._session, self.base_url)
+            self._gateway_clmm = GatewayCLMMRouter(self._session, self.base_url)
             self._market_data = MarketDataRouter(self._session, self.base_url)
             self._portfolio = PortfolioRouter(self._session, self.base_url)
             self._scripts = ScriptsRouter(self._session, self.base_url)
@@ -78,7 +81,8 @@ class HummingbotAPIClient:
             self._controllers = None
             self._docker = None
             self._gateway = None
-            self._gateway_trading = None
+            self._gateway_swap = None
+            self._gateway_clmm = None
             self._market_data = None
             self._portfolio = None
             self._scripts = None
@@ -141,11 +145,18 @@ class HummingbotAPIClient:
         return self._gateway
 
     @property
-    def gateway_trading(self) -> GatewayTradingRouter:
-        """Access the gateway trading router."""
-        if self._gateway_trading is None:
+    def gateway_swap(self) -> GatewaySwapRouter:
+        """Access the gateway swap router."""
+        if self._gateway_swap is None:
             raise RuntimeError("Client not initialized. Call await client.init() first.")
-        return self._gateway_trading
+        return self._gateway_swap
+
+    @property
+    def gateway_clmm(self) -> GatewayCLMMRouter:
+        """Access the gateway CLMM router."""
+        if self._gateway_clmm is None:
+            raise RuntimeError("Client not initialized. Call await client.init() first.")
+        return self._gateway_clmm
 
     @property
     def market_data(self) -> MarketDataRouter:
