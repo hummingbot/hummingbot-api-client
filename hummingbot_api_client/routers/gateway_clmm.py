@@ -8,7 +8,7 @@ class GatewayCLMMRouter(BaseRouter):
     Supports CLMM connectors (Meteora, Raydium, Uniswap V3) for concentrated liquidity positions.
     """
 
-    async def get_clmm_pool_info(
+    async def get_pool_info(
         self,
         connector: str,
         network: str,
@@ -27,7 +27,7 @@ class GatewayCLMMRouter(BaseRouter):
             All field names are returned in snake_case format.
 
         Example:
-            pool_info = await client.gateway_clmm.get_clmm_pool_info(
+            pool_info = await client.gateway_clmm.get_pool_info(
                 connector='meteora',
                 network='solana-mainnet-beta',
                 pool_address='2sf5NYcY4zUPXUSmG6f66mskb24t5F8S11pC1Nz5nQT3'
@@ -40,7 +40,7 @@ class GatewayCLMMRouter(BaseRouter):
         }
         return await self._get("/gateway/clmm/pool-info", params=params)
 
-    async def open_clmm_position(
+    async def open_position(
         self,
         connector: str,
         network: str,
@@ -72,7 +72,7 @@ class GatewayCLMMRouter(BaseRouter):
             Transaction hash and position address
 
         Example:
-            result = await client.gateway_clmm.open_clmm_position(
+            result = await client.gateway_clmm.open_position(
                 connector='meteora',
                 network='solana-mainnet-beta',
                 pool_address='2sf5NYcY4zUPXUSmG6f66mskb24t5F8S11pC1Nz5nQT3',
@@ -103,7 +103,7 @@ class GatewayCLMMRouter(BaseRouter):
 
         return await self._post("/gateway/clmm/open", json=request_data)
 
-    async def add_liquidity_to_clmm_position(
+    async def add_liquidity(
         self,
         connector: str,
         network: str,
@@ -114,7 +114,7 @@ class GatewayCLMMRouter(BaseRouter):
         wallet_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Add MORE liquidity to an EXISTING CLMM position.
+        Add MORE liquidity to an EXISTING position.
 
         Args:
             connector: CLMM connector (e.g., 'meteora')
@@ -129,7 +129,7 @@ class GatewayCLMMRouter(BaseRouter):
             Transaction hash
 
         Example:
-            result = await client.gateway_clmm.add_liquidity_to_clmm_position(
+            result = await client.gateway_clmm.add_liquidity(
                 connector='meteora',
                 network='solana-mainnet-beta',
                 position_address='...',
@@ -153,7 +153,7 @@ class GatewayCLMMRouter(BaseRouter):
 
         return await self._post("/gateway/clmm/add", json=request_data)
 
-    async def remove_liquidity_from_clmm_position(
+    async def remove_liquidity(
         self,
         connector: str,
         network: str,
@@ -162,7 +162,7 @@ class GatewayCLMMRouter(BaseRouter):
         wallet_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Remove SOME liquidity from a CLMM position (partial removal).
+        Remove SOME liquidity from a position (partial removal).
 
         Args:
             connector: CLMM connector (e.g., 'meteora')
@@ -175,7 +175,7 @@ class GatewayCLMMRouter(BaseRouter):
             Transaction hash
 
         Example:
-            result = await client.gateway_clmm.remove_liquidity_from_clmm_position(
+            result = await client.gateway_clmm.remove_liquidity(
                 connector='meteora',
                 network='solana-mainnet-beta',
                 position_address='...',
@@ -193,7 +193,7 @@ class GatewayCLMMRouter(BaseRouter):
 
         return await self._post("/gateway/clmm/remove", json=request_data)
 
-    async def close_clmm_position(
+    async def close_position(
         self,
         connector: str,
         network: str,
@@ -201,7 +201,7 @@ class GatewayCLMMRouter(BaseRouter):
         wallet_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        CLOSE a CLMM position completely (removes all liquidity).
+        CLOSE a position completely (removes all liquidity).
 
         Args:
             connector: CLMM connector (e.g., 'meteora')
@@ -213,7 +213,7 @@ class GatewayCLMMRouter(BaseRouter):
             Transaction hash
 
         Example:
-            result = await client.gateway_clmm.close_clmm_position(
+            result = await client.gateway_clmm.close_position(
                 connector='meteora',
                 network='solana-mainnet-beta',
                 position_address='...'
@@ -229,7 +229,7 @@ class GatewayCLMMRouter(BaseRouter):
 
         return await self._post("/gateway/clmm/close", json=request_data)
 
-    async def collect_fees_from_clmm_position(
+    async def collect_fees(
         self,
         connector: str,
         network: str,
@@ -237,7 +237,7 @@ class GatewayCLMMRouter(BaseRouter):
         wallet_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Collect accumulated fees from a CLMM liquidity position.
+        Collect accumulated fees from a liquidity position.
 
         Args:
             connector: CLMM connector (e.g., 'meteora')
@@ -249,7 +249,7 @@ class GatewayCLMMRouter(BaseRouter):
             Transaction hash and collected fee amounts
 
         Example:
-            result = await client.gateway_clmm.collect_fees_from_clmm_position(
+            result = await client.gateway_clmm.collect_fees(
                 connector='meteora',
                 network='solana-mainnet-beta',
                 position_address='...'
@@ -266,7 +266,7 @@ class GatewayCLMMRouter(BaseRouter):
 
         return await self._post("/gateway/clmm/collect-fees", json=request_data)
 
-    async def get_clmm_positions_owned(
+    async def get_positions_owned(
         self,
         connector: str,
         network: str,
@@ -274,7 +274,7 @@ class GatewayCLMMRouter(BaseRouter):
         wallet_address: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        Get all CLMM liquidity positions owned by a wallet for a specific pool.
+        Get all liquidity positions owned by a wallet for a specific pool.
 
         Args:
             connector: CLMM connector (e.g., 'meteora')
@@ -283,10 +283,10 @@ class GatewayCLMMRouter(BaseRouter):
             wallet_address: Wallet address (uses default if not provided)
 
         Returns:
-            List of CLMM position information for the specified pool
+            List of position information for the specified pool
 
         Example:
-            positions = await client.gateway_clmm.get_clmm_positions_owned(
+            positions = await client.gateway_clmm.get_positions_owned(
                 connector='meteora',
                 network='solana-mainnet-beta',
                 pool_address='2sf5NYcY4zUPXUSmG6f66mskb24t5F8S11pC1Nz5nQT3'
@@ -304,14 +304,14 @@ class GatewayCLMMRouter(BaseRouter):
 
         return await self._post("/gateway/clmm/positions_owned", json=request_data)
 
-    async def get_clmm_position_events(
+    async def get_position_events(
         self,
         position_address: str,
         event_type: Optional[str] = None,
         limit: int = 100
     ) -> Dict[str, Any]:
         """
-        Get event history for a CLMM position.
+        Get event history for a position.
 
         Args:
             position_address: Position NFT address
@@ -322,7 +322,7 @@ class GatewayCLMMRouter(BaseRouter):
             List of position events
 
         Example:
-            events = await client.gateway_clmm.get_clmm_position_events(
+            events = await client.gateway_clmm.get_position_events(
                 position_address='...',
                 event_type='COLLECT_FEES',
                 limit=10
@@ -336,7 +336,7 @@ class GatewayCLMMRouter(BaseRouter):
 
         return await self._get(f"/gateway/clmm/positions/{position_address}/events", params=params)
 
-    async def search_clmm_positions(
+    async def search_positions(
         self,
         network: Optional[str] = None,
         connector: Optional[str] = None,
@@ -349,7 +349,7 @@ class GatewayCLMMRouter(BaseRouter):
         refresh: bool = False
     ) -> Dict[str, Any]:
         """
-        Search CLMM positions with filters.
+        Search positions with filters.
 
         Args:
             network: Filter by network (e.g., 'solana-mainnet-beta')
@@ -366,7 +366,7 @@ class GatewayCLMMRouter(BaseRouter):
             Paginated list of positions
 
         Example:
-            results = await client.gateway_clmm.search_clmm_positions(
+            results = await client.gateway_clmm.search_positions(
                 network='solana-mainnet-beta',
                 connector='meteora',
                 status='OPEN',
