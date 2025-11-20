@@ -76,3 +76,7 @@ class AccountsRouter(BaseRouter):
             Success message
         """
         return await self._delete(f"accounts/gateway/{chain}/{address}")
+
+    async def list_gateway_wallets(self) -> List[Dict]:
+        """List all wallets."""
+        return await self._get("/accounts/gateway/wallets/")
