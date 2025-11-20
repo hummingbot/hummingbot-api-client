@@ -48,7 +48,8 @@ class PortfolioRouter(BaseRouter):
         limit: int = 100,
         cursor: Optional[str] = None,
         start_time: Optional[int] = None,
-        end_time: Optional[int] = None
+        end_time: Optional[int] = None,
+        interval: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get historical portfolio states with filtering and pagination.
@@ -60,7 +61,7 @@ class PortfolioRouter(BaseRouter):
             cursor: Pagination cursor for next page
             start_time: Start timestamp (Unix timestamp in seconds)
             end_time: End timestamp (Unix timestamp in seconds)
-            
+            interval: Data sampling interval: 5m, 15m, 30m, 1h, 4h, 12h, 1d. Default is 5m (raw data)
         Returns:
             Paginated historical portfolio data
             
@@ -87,6 +88,8 @@ class PortfolioRouter(BaseRouter):
             filter_request["start_time"] = start_time
         if end_time is not None:
             filter_request["end_time"] = end_time
+        if interval is not None:
+            filter_request["interval"] = interval
             
         return await self._post("/portfolio/history", json=filter_request)
     
