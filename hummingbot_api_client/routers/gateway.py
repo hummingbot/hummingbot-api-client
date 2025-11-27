@@ -156,6 +156,37 @@ class GatewayRouter(BaseRouter):
         }
         return await self._post("/gateway/pools", json=pool_data)
 
+    async def delete_pool(
+        self,
+        connector: str,
+        network: str,
+        pool_type: str,
+        address: str
+    ) -> Dict[str, Any]:
+        """
+        Delete a liquidity pool from Gateway's pool list.
+
+        Args:
+            connector: DEX connector (e.g., 'meteora', 'raydium', 'uniswap')
+            network: Network name (e.g., 'mainnet-beta', 'mainnet')
+            pool_type: Pool type (e.g., 'CLMM', 'AMM')
+            address: Pool contract address to remove
+
+        Example:
+            await client.gateway.delete_pool(
+                connector='meteora',
+                network='mainnet-beta',
+                pool_type='CLMM',
+                address='2sf5NYcY4zUPXUSmG6f66mskb24t5F8S11pC1Nz5nQT3'
+            )
+        """
+        params = {
+            "connector_name": connector,
+            "network": network,
+            "pool_type": pool_type.lower()  # Gateway expects lowercase (amm, clmm)
+        }
+        return await self._delete(f"/gateway/pools/{address}", params=params)
+
     # ============================================
     # Networks (Primary Endpoints)
     # ============================================
