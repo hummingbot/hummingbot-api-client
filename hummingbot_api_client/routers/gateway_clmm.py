@@ -26,6 +26,11 @@ class GatewayCLMMRouter(BaseRouter):
             Pool information including liquidity, price, bins (for Meteora), etc.
             All field names are returned in snake_case format.
 
+        Raises:
+            HTTPError (400): For Raydium, returns error if pool is a Standard AMM pool
+                instead of a CLMM pool. This endpoint only supports Concentrated
+                Liquidity (CLMM) pools.
+
         Example:
             pool_info = await client.gateway_clmm.get_pool_info(
                 connector='meteora',
@@ -120,7 +125,12 @@ class GatewayCLMMRouter(BaseRouter):
             extra_params: Additional connector-specific parameters (e.g., {"strategyType": 0} for Meteora)
 
         Returns:
-            Transaction hash and position address
+            Dict containing:
+                - position_address: Position NFT address
+                - transaction_hash: Transaction hash
+                - entry_price: Pool price when position was opened
+                - current_price: Same as entry_price at open time (updated by poller later)
+                - percentage: Position percentage in the pool
 
         Example:
             result = await client.gateway_clmm.open_position(
@@ -134,6 +144,7 @@ class GatewayCLMMRouter(BaseRouter):
                 slippage_pct=Decimal('1'),
                 extra_params={"strategyType": 0}
             )
+            print(f"Entry price: {result['entry_price']}")
         """
         request_data = {
             "connector": connector,
@@ -162,7 +173,7 @@ class GatewayCLMMRouter(BaseRouter):
         wallet_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        CLOSE a position completely (removes all liquidity).
+        CLOSE a position completely (removes all liquidity and collects pending fees).
 
         Args:
             connector: CLMM connector (e.g., 'meteora')
@@ -171,7 +182,12 @@ class GatewayCLMMRouter(BaseRouter):
             wallet_address: Wallet address (uses default if not provided)
 
         Returns:
-            Transaction hash
+            Dict containing:
+                - transaction_hash: Transaction hash
+                - position_address: Position NFT address
+                - base_fee_collected: Amount of base token fees collected
+                - quote_fee_collected: Amount of quote token fees collected
+                - status: Position status after close
 
         Example:
             result = await client.gateway_clmm.close_position(
@@ -179,6 +195,7 @@ class GatewayCLMMRouter(BaseRouter):
                 network='solana-mainnet-beta',
                 position_address='...'
             )
+            print(f"Collected fees: {result['base_fee_collected']} base, {result['quote_fee_collected']} quote")
         """
         request_data = {
             "connector": connector,

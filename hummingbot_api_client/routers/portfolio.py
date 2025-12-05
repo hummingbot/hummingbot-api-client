@@ -8,37 +8,44 @@ class PortfolioRouter(BaseRouter):
     async def get_state(
         self,
         account_names: Optional[List[str]] = None,
-        connector_names: Optional[List[str]] = None
+        connector_names: Optional[List[str]] = None,
+        skip_gateway: bool = False
     ) -> Dict[str, Any]:
         """
         Get the current portfolio state across accounts and connectors.
-        
+
         Args:
             account_names: List of accounts to filter by (default: all accounts)
             connector_names: List of connectors to filter by (default: all connectors)
-            
+            skip_gateway: Skip Gateway wallet balance updates for faster CEX-only queries (default: False)
+
         Returns:
             Portfolio state with account balances and token information
-            
+
         Example:
             # Get all portfolio state
             state = await client.portfolio.get_state()
-            
+
             # Get state for specific account
             state = await client.portfolio.get_state(["master_account"])
-            
+
             # Get state for specific account and connector
             state = await client.portfolio.get_state(
-                ["master_account"], 
+                ["master_account"],
                 ["binance", "binance_perpetual"]
             )
+
+            # Get CEX-only state (faster, skips Gateway)
+            state = await client.portfolio.get_state(skip_gateway=True)
         """
         filter_request = {}
         if account_names is not None:
             filter_request["account_names"] = account_names
         if connector_names is not None:
             filter_request["connector_names"] = connector_names
-            
+        if skip_gateway:
+            filter_request["skip_gateway"] = skip_gateway
+
         return await self._post("/portfolio/state", json=filter_request)
     
     async def get_history(
