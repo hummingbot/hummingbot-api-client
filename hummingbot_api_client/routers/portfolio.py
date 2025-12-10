@@ -9,7 +9,8 @@ class PortfolioRouter(BaseRouter):
         self,
         account_names: Optional[List[str]] = None,
         connector_names: Optional[List[str]] = None,
-        skip_gateway: bool = False
+        skip_gateway: bool = False,
+        refresh: bool = False
     ) -> Dict[str, Any]:
         """
         Get the current portfolio state across accounts and connectors.
@@ -18,6 +19,7 @@ class PortfolioRouter(BaseRouter):
             account_names: List of accounts to filter by (default: all accounts)
             connector_names: List of connectors to filter by (default: all connectors)
             skip_gateway: Skip Gateway wallet balance updates for faster CEX-only queries (default: False)
+            refresh: If True, refresh balances before returning. If False, return cached state (default: False)
 
         Returns:
             Portfolio state with account balances and token information
@@ -37,6 +39,9 @@ class PortfolioRouter(BaseRouter):
 
             # Get CEX-only state (faster, skips Gateway)
             state = await client.portfolio.get_state(skip_gateway=True)
+
+            # Force refresh balances from exchanges
+            state = await client.portfolio.get_state(refresh=True)
         """
         filter_request = {}
         if account_names is not None:
@@ -45,6 +50,8 @@ class PortfolioRouter(BaseRouter):
             filter_request["connector_names"] = connector_names
         if skip_gateway:
             filter_request["skip_gateway"] = skip_gateway
+        if refresh:
+            filter_request["refresh"] = refresh
 
         return await self._post("/portfolio/state", json=filter_request)
     
