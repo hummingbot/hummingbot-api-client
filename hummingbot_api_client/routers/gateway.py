@@ -303,3 +303,106 @@ class GatewayRouter(BaseRouter):
             )
         """
         return await self._delete(f"/gateway/networks/{network_id}/tokens/{token_address}")
+
+    # ============================================
+    # Wallets
+    # ============================================
+
+    async def create_wallet(
+        self,
+        chain: str,
+        set_default: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Create a new wallet in Gateway.
+
+        Args:
+            chain: Blockchain chain (e.g., 'solana', 'ethereum')
+            set_default: Whether to set this wallet as the default (default: False)
+
+        Returns:
+            Dict with address and chain of the created wallet.
+
+        Example:
+            await client.gateway.create_wallet(
+                chain='solana',
+                set_default=True
+            )
+        """
+        wallet_data = {
+            "chain": chain,
+            "set_default": set_default
+        }
+        return await self._post("/gateway/wallets/create", json=wallet_data)
+
+    async def show_private_key(
+        self,
+        chain: str,
+        address: str,
+        passphrase: str
+    ) -> Dict[str, Any]:
+        """
+        Show private key for a wallet.
+
+        WARNING: This endpoint exposes sensitive information. Use with caution.
+
+        Args:
+            chain: Blockchain chain (e.g., 'solana', 'ethereum')
+            address: Wallet address
+            passphrase: Gateway passphrase for decryption
+
+        Returns:
+            Dict with privateKey field.
+
+        Example:
+            await client.gateway.show_private_key(
+                chain='solana',
+                address='<wallet-address>',
+                passphrase='<gateway-passphrase>'
+            )
+        """
+        request_data = {
+            "chain": chain,
+            "address": address,
+            "passphrase": passphrase
+        }
+        return await self._post("/gateway/wallets/show-private-key", json=request_data)
+
+    async def send_transaction(
+        self,
+        chain: str,
+        network: str,
+        address: str,
+        to_address: str,
+        amount: str
+    ) -> Dict[str, Any]:
+        """
+        Send a native token transaction.
+
+        Args:
+            chain: Blockchain chain (e.g., 'solana', 'ethereum')
+            network: Network name (e.g., 'mainnet-beta', 'mainnet')
+            address: Sender wallet address
+            to_address: Recipient wallet address
+            amount: Amount to send as string (e.g., '0.001')
+
+        Returns:
+            Dict with transaction signature/hash.
+
+        Example:
+            await client.gateway.send_transaction(
+                chain='solana',
+                network='mainnet-beta',
+                address='<sender-address>',
+                to_address='<recipient-address>',
+                amount='0.001'
+            )
+        """
+        transaction_data = {
+            "chain": chain,
+            "network": network,
+            "address": address,
+            "to_address": to_address,
+            "amount": amount
+        }
+        return await self._post("/gateway/wallets/send", json=transaction_data)
