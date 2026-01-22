@@ -361,3 +361,120 @@ class MarketDataRouter(BaseRouter):
             "is_buy": is_buy
         }
         return await self._post("/market-data/order-book/vwap-for-volume", json=request)
+
+    # Trading Pair Management
+    async def add_trading_pair(
+        self,
+        connector_name: str,
+        trading_pair: str,
+        account_name: Optional[str] = None,
+        timeout: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Add a trading pair to an active connector's market data subscription.
+
+        Args:
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
+            trading_pair: Trading pair to add (e.g., "BTC-USDT")
+            account_name: Account name (optional)
+            timeout: Timeout in seconds to wait for the pair to be ready (optional)
+
+        Returns:
+            Result of the add operation
+
+        Example:
+            result = await client.market_data.add_trading_pair("binance", "BTC-USDT")
+            result = await client.market_data.add_trading_pair(
+                "binance_perpetual", "ETH-USDT", account_name="master_account", timeout=30
+            )
+        """
+        request = {
+            "connector_name": connector_name,
+            "trading_pair": trading_pair
+        }
+        if account_name is not None:
+            request["account_name"] = account_name
+        if timeout is not None:
+            request["timeout"] = timeout
+        return await self._post("/market-data/trading-pair/add", json=request)
+
+    async def remove_trading_pair(
+        self,
+        connector_name: str,
+        trading_pair: str,
+        account_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Remove a trading pair from an active connector's market data subscription.
+
+        Args:
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
+            trading_pair: Trading pair to remove (e.g., "BTC-USDT")
+            account_name: Account name (optional)
+
+        Returns:
+            Result of the remove operation
+
+        Example:
+            result = await client.market_data.remove_trading_pair("binance", "BTC-USDT")
+        """
+        request = {
+            "connector_name": connector_name,
+            "trading_pair": trading_pair
+        }
+        if account_name is not None:
+            request["account_name"] = account_name
+        return await self._post("/market-data/trading-pair/remove", json=request)
+
+    # Order Book Diagnostics
+    async def get_order_book_diagnostics(
+        self,
+        connector_name: str,
+        account_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get order book diagnostics for a connector.
+
+        Args:
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
+            account_name: Account name (optional)
+
+        Returns:
+            Order book diagnostic information
+
+        Example:
+            diag = await client.market_data.get_order_book_diagnostics("binance")
+        """
+        params = {}
+        if account_name is not None:
+            params["account_name"] = account_name
+        return await self._get(
+            f"/market-data/order-book/diagnostics/{connector_name}",
+            params=params if params else None
+        )
+
+    async def restart_order_book_tracker(
+        self,
+        connector_name: str,
+        account_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Restart the order book tracker for a connector.
+
+        Args:
+            connector_name: Exchange connector name (e.g., "binance", "binance_perpetual")
+            account_name: Account name (optional)
+
+        Returns:
+            Result of the restart operation
+
+        Example:
+            result = await client.market_data.restart_order_book_tracker("binance")
+        """
+        params = {}
+        if account_name is not None:
+            params["account_name"] = account_name
+        return await self._post(
+            f"/market-data/order-book/restart/{connector_name}",
+            params=params if params else None
+        )

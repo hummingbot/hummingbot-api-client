@@ -138,38 +138,17 @@ class PortfolioRouter(BaseRouter):
             
         return await self._post("/portfolio/distribution", json=filter_request)
     
-    async def get_accounts_distribution(
-        self,
-        account_names: Optional[List[str]] = None,
-        connector_names: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+    async def get_accounts_distribution(self) -> Dict[str, Any]:
         """
         Get portfolio distribution by accounts with percentages.
-        
-        Args:
-            account_names: List of accounts to analyze (default: all accounts)
-            connector_names: List of connectors to filter by (default: all connectors)
-            
+
         Returns:
             Account distribution data with percentages and connector breakdown
-            
+
         Example:
-            # Get distribution across all accounts
             distribution = await client.portfolio.get_accounts_distribution()
-            
-            # Get distribution for specific accounts and connectors
-            distribution = await client.portfolio.get_accounts_distribution(
-                ["master_account"],
-                ["binance", "binance_perpetual"]
-            )
         """
-        filter_request = {}
-        if account_names is not None:
-            filter_request["account_names"] = account_names
-        if connector_names is not None:
-            filter_request["connector_names"] = connector_names
-            
-        return await self._post("/portfolio/accounts-distribution", json=filter_request)
+        return await self._get("/portfolio/accounts-distribution")
     
     # Convenience methods for common operations
     async def get_total_value(
