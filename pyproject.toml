@@ -4,18 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hummingbot-api-client"
-version = "1.2.6"
+version = "1.2.7"
 description = "An async Python client for Hummingbot API"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 authors = [
     {name = "Federico Cardoso", email = "federico.cardoso.e@gmail.com"},
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -32,3 +31,6 @@ Homepage = "https://github.com/hummingbot/hummingbot-api-client"
 Documentation = "https://github.com/hummingbot/hummingbot-api-client#readme"
 Repository = "https://github.com/hummingbot/hummingbot-api-client"
 Issues = "https://github.com/hummingbot/hummingbot-api-client/issues"
+
+[tool.setuptools.packages.find]
+include = ["hummingbot_api_client*"]
