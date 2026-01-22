@@ -8,6 +8,7 @@ from .routers import (
     ConnectorsRouter,
     ControllersRouter,
     DockerRouter,
+    ExecutorsRouter,
     GatewayRouter,
     GatewaySwapRouter,
     GatewayCLMMRouter,
@@ -38,6 +39,7 @@ class HummingbotAPIClient:
         self._connectors: Optional[ConnectorsRouter] = None
         self._controllers: Optional[ControllersRouter] = None
         self._docker: Optional[DockerRouter] = None
+        self._executors: Optional[ExecutorsRouter] = None
         self._gateway: Optional[GatewayRouter] = None
         self._gateway_swap: Optional[GatewaySwapRouter] = None
         self._gateway_clmm: Optional[GatewayCLMMRouter] = None
@@ -60,6 +62,7 @@ class HummingbotAPIClient:
             self._connectors = ConnectorsRouter(self._session, self.base_url)
             self._controllers = ControllersRouter(self._session, self.base_url)
             self._docker = DockerRouter(self._session, self.base_url)
+            self._executors = ExecutorsRouter(self._session, self.base_url)
             self._gateway = GatewayRouter(self._session, self.base_url)
             self._gateway_swap = GatewaySwapRouter(self._session, self.base_url)
             self._gateway_clmm = GatewayCLMMRouter(self._session, self.base_url)
@@ -80,6 +83,7 @@ class HummingbotAPIClient:
             self._connectors = None
             self._controllers = None
             self._docker = None
+            self._executors = None
             self._gateway = None
             self._gateway_swap = None
             self._gateway_clmm = None
@@ -136,6 +140,13 @@ class HummingbotAPIClient:
         if self._docker is None:
             raise RuntimeError("Client not initialized. Call await client.init() first.")
         return self._docker
+
+    @property
+    def executors(self) -> ExecutorsRouter:
+        """Access the executors router."""
+        if self._executors is None:
+            raise RuntimeError("Client not initialized. Call await client.init() first.")
+        return self._executors
 
     @property
     def gateway(self) -> GatewayRouter:
