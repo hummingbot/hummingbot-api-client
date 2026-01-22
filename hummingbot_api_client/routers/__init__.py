@@ -6,6 +6,7 @@ from .bot_orchestration import BotOrchestrationRouter
 from .connectors import ConnectorsRouter
 from .controllers import ControllersRouter
 from .docker import DockerRouter
+from .executors import ExecutorsRouter
 from .gateway import GatewayRouter
 from .gateway_swap import GatewaySwapRouter
 from .gateway_clmm import GatewayCLMMRouter
@@ -23,6 +24,7 @@ __all__ = [
     "ConnectorsRouter",
     "ControllersRouter",
     "DockerRouter",
+    "ExecutorsRouter",
     "GatewayRouter",
     "GatewaySwapRouter",
     "GatewayCLMMRouter",
