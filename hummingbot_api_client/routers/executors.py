@@ -27,90 +27,61 @@ class ExecutorsRouter(BaseRouter):
                 account_name="master_account"
             )
         """
-        params = {}
-        if account_name is not None:
-            params["account_name"] = account_name
         body = {"executor_config": executor_config}
-        return await self._post("/executors/", json=body, params=params if params else None)
+        if account_name is not None:
+            body["account_name"] = account_name
+        return await self._post("/executors/", json=body)
 
     async def search_executors(
         self,
-        executor_ids: Optional[List[str]] = None,
-        controller_id: Optional[str] = None,
+        account_names: Optional[List[str]] = None,
+        connector_names: Optional[List[str]] = None,
+        trading_pairs: Optional[List[str]] = None,
         executor_types: Optional[List[str]] = None,
-        statuses: Optional[List[str]] = None,
-        is_active: Optional[bool] = None,
-        is_archived: Optional[bool] = None,
-        trading_pair: Optional[str] = None,
-        connector_name: Optional[str] = None,
-        account_name: Optional[str] = None,
-        side: Optional[str] = None,
-        start_time_from: Optional[int] = None,
-        start_time_to: Optional[int] = None,
-        end_time_from: Optional[int] = None,
-        end_time_to: Optional[int] = None
+        status: Optional[str] = None,
+        cursor: Optional[str] = None,
+        limit: int = 50
     ) -> Dict[str, Any]:
         """
         Search for executors with various filters.
 
         Args:
-            executor_ids: List of executor IDs to filter by
-            controller_id: Controller ID to filter by
+            account_names: List of account names to filter by
+            connector_names: List of connector names to filter by
+            trading_pairs: List of trading pairs to filter by
             executor_types: List of executor types to filter by
-            statuses: List of statuses to filter by
-            is_active: Filter by active status
-            is_archived: Filter by archived status
-            trading_pair: Trading pair to filter by
-            connector_name: Connector name to filter by
-            account_name: Account name to filter by
-            side: Trade side to filter by ("buy" or "sell")
-            start_time_from: Filter executors started after this timestamp
-            start_time_to: Filter executors started before this timestamp
-            end_time_from: Filter executors ended after this timestamp
-            end_time_to: Filter executors ended before this timestamp
+            status: Status to filter by
+            cursor: Pagination cursor for fetching next page
+            limit: Maximum number of results to return (default 50)
 
         Returns:
-            List of matching executors
+            Dict containing matching executors and pagination info
 
         Example:
-            # Get all active executors
-            executors = await client.executors.search_executors(is_active=True)
-
-            # Get executors for a specific trading pair
+            # Get all executors for specific accounts
             executors = await client.executors.search_executors(
-                trading_pair="BTC-USDT",
-                connector_name="binance_perpetual"
+                account_names=["master_account"]
+            )
+
+            # Get executors for specific trading pairs
+            executors = await client.executors.search_executors(
+                trading_pairs=["BTC-USDT", "ETH-USDT"],
+                connector_names=["binance_perpetual"]
             )
         """
-        filters = {}
-        if executor_ids is not None:
-            filters["executor_ids"] = executor_ids
-        if controller_id is not None:
-            filters["controller_id"] = controller_id
+        filters = {"limit": limit}
+        if account_names is not None:
+            filters["account_names"] = account_names
+        if connector_names is not None:
+            filters["connector_names"] = connector_names
+        if trading_pairs is not None:
+            filters["trading_pairs"] = trading_pairs
         if executor_types is not None:
             filters["executor_types"] = executor_types
-        if statuses is not None:
-            filters["statuses"] = statuses
-        if is_active is not None:
-            filters["is_active"] = is_active
-        if is_archived is not None:
-            filters["is_archived"] = is_archived
-        if trading_pair is not None:
-            filters["trading_pair"] = trading_pair
-        if connector_name is not None:
-            filters["connector_name"] = connector_name
-        if account_name is not None:
-            filters["account_name"] = account_name
-        if side is not None:
-            filters["side"] = side
-        if start_time_from is not None:
-            filters["start_time_from"] = start_time_from
-        if start_time_to is not None:
-            filters["start_time_to"] = start_time_to
-        if end_time_from is not None:
-            filters["end_time_from"] = end_time_from
-        if end_time_to is not None:
-            filters["end_time_to"] = end_time_to
+        if status is not None:
+            filters["status"] = status
+        if cursor is not None:
+            filters["cursor"] = cursor
 
         return await self._post("/executors/search", json=filters)
 
@@ -163,23 +134,8 @@ class ExecutorsRouter(BaseRouter):
             # Stop but keep position open
             result = await client.executors.stop_executor("exec_123", keep_position=True)
         """
-        params = {"keep_position": str(keep_position).lower()}
-        return await self._post(f"/executors/{executor_id}/stop", json={}, params=params)
-
-    async def delete_executor(self, executor_id: str) -> Dict[str, Any]:
-        """
-        Delete an executor.
-
-        Args:
-            executor_id: The executor ID to delete
-
-        Returns:
-            Delete operation result
-
-        Example:
-            result = await client.executors.delete_executor("exec_123")
-        """
-        return await self._delete(f"/executors/{executor_id}")
+        body = {"keep_position": keep_position}
+        return await self._post(f"/executors/{executor_id}/stop", json=body)
 
     # Position Hold Management
     async def get_positions_summary(self) -> Dict[str, Any]:
@@ -255,16 +211,16 @@ class ExecutorsRouter(BaseRouter):
         )
 
     # Executor Types/Schema
-    async def get_available_executor_types(self) -> List[str]:
+    async def get_available_executor_types(self) -> Dict[str, Any]:
         """
         Get list of available executor types.
 
         Returns:
-            List of executor type names
+            Dict containing executor type information
 
         Example:
             types = await client.executors.get_available_executor_types()
-            # Returns: ["dca", "grid", "twap", ...]
+            # Returns: {"executor_types": [...]}
         """
         return await self._get("/executors/types/available")
 
