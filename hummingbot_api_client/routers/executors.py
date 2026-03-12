@@ -3,16 +3,7 @@ from .base import BaseRouter
 
 
 class ExecutorsRouter(BaseRouter):
-    """Executors router for managing trading executors and position holds.
-
-    Supported executor types:
-    - order_executor: Simple order execution with retry logic (MARKET, LIMIT, LIMIT_MAKER, LIMIT_CHASER)
-    - position_executor: Directional positions with stop-loss and take-profit
-    - dca_executor: Dollar-cost averaging over time
-    - grid_executor: Grid trading in ranging markets
-    - swap_executor: DEX token swaps via Gateway (Jupiter, Raydium)
-    - lp_executor: CLMM liquidity positions on DEXs (Meteora, Raydium)
-    """
+    """Executors router for managing trading executors and position holds."""
 
     # Executor CRUD Operations
     async def create_executor(
@@ -24,64 +15,17 @@ class ExecutorsRouter(BaseRouter):
         Create a new executor with the given configuration.
 
         Args:
-            executor_config: Executor configuration dictionary containing:
-                - type: Executor type (order_executor, position_executor, dca_executor,
-                        grid_executor, swap_executor, lp_executor)
-                - Other fields depend on executor type
-
-        Common executor configs:
-
-        swap_executor (DEX swaps):
-            {
-                "type": "swap_executor",
-                "connector_name": "jupiter/router",
-                "trading_pair": "TOKEN-SOL",
-                "side": 1,  # 1=BUY, 2=SELL
-                "amount": "0.5"  # or "$10" for USD amount
-            }
-
-        lp_executor (CLMM LP positions):
-            {
-                "type": "lp_executor",
-                "connector_name": "meteora/clmm",
-                "trading_pair": "TOKEN-SOL",
-                "side": 0,  # 0=double-sided, 1=base only, 2=quote only
-                "lower_price": 0.001,
-                "upper_price": 0.002,
-                "base_amount": 1000,  # or quote_amount
-            }
-
+            executor_config: Executor configuration dictionary
             account_name: Account to run the executor on (optional)
 
         Returns:
             Created executor information
 
         Example:
-            # Create a DCA executor
             executor = await client.executors.create_executor(
-                {"type": "dca_executor", "trading_pair": "BTC-USDT", ...},
+                {"type": "dca", "trading_pair": "BTC-USDT", ...},
                 account_name="master_account"
             )
-
-            # Create a swap executor
-            executor = await client.executors.create_executor({
-                "type": "swap_executor",
-                "connector_name": "jupiter/router",
-                "trading_pair": "WIF-SOL",
-                "side": 1,
-                "amount": "$5"
-            })
-
-            # Create an LP executor
-            executor = await client.executors.create_executor({
-                "type": "lp_executor",
-                "connector_name": "meteora/clmm",
-                "trading_pair": "WIF-SOL",
-                "side": 0,
-                "lower_price": 0.5,
-                "upper_price": 1.5,
-                "base_amount": 100
-            })
         """
         body = {"executor_config": executor_config}
         if account_name is not None:
