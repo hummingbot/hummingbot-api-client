@@ -9,7 +9,8 @@ class ExecutorsRouter(BaseRouter):
     async def create_executor(
         self,
         executor_config: Dict[str, Any],
-        account_name: Optional[str] = None
+        account_name: Optional[str] = None,
+        controller_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Create a new executor with the given configuration.
@@ -17,6 +18,7 @@ class ExecutorsRouter(BaseRouter):
         Args:
             executor_config: Executor configuration dictionary
             account_name: Account to run the executor on (optional)
+            controller_id: Controller ID that owns this executor (default "main")
 
         Returns:
             Created executor information
@@ -24,12 +26,15 @@ class ExecutorsRouter(BaseRouter):
         Example:
             executor = await client.executors.create_executor(
                 {"type": "dca", "trading_pair": "BTC-USDT", ...},
-                account_name="master_account"
+                account_name="master_account",
+                controller_id="my_controller"
             )
         """
         body = {"executor_config": executor_config}
         if account_name is not None:
             body["account_name"] = account_name
+        if controller_id is not None:
+            body["controller_id"] = controller_id
         return await self._post("/executors/", json=body)
 
     async def search_executors(
@@ -39,6 +44,7 @@ class ExecutorsRouter(BaseRouter):
         trading_pairs: Optional[List[str]] = None,
         executor_types: Optional[List[str]] = None,
         status: Optional[str] = None,
+        controller_ids: Optional[List[str]] = None,
         cursor: Optional[str] = None,
         limit: int = 50
     ) -> Dict[str, Any]:
@@ -51,6 +57,7 @@ class ExecutorsRouter(BaseRouter):
             trading_pairs: List of trading pairs to filter by
             executor_types: List of executor types to filter by
             status: Status to filter by
+            controller_ids: List of controller IDs to filter by
             cursor: Pagination cursor for fetching next page
             limit: Maximum number of results to return (default 50)
 
@@ -63,9 +70,9 @@ class ExecutorsRouter(BaseRouter):
                 account_names=["master_account"]
             )
 
-            # Get executors for specific trading pairs
+            # Get executors for a specific controller
             executors = await client.executors.search_executors(
-                trading_pairs=["BTC-USDT", "ETH-USDT"],
+                controller_ids=["my_controller"],
                 connector_names=["binance_perpetual"]
             )
         """
@@ -80,6 +87,8 @@ class ExecutorsRouter(BaseRouter):
             filters["executor_types"] = executor_types
         if status is not None:
             filters["status"] = status
+        if controller_ids is not None:
+            filters["controller_ids"] = controller_ids
         if cursor is not None:
             filters["cursor"] = cursor
 
@@ -96,6 +105,34 @@ class ExecutorsRouter(BaseRouter):
             summary = await client.executors.get_summary()
         """
         return await self._get("/executors/summary")
+
+    async def get_performance_report(
+        self,
+        controller_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get a performance report for executors.
+
+        Aggregates metrics from completed executors including realized/unrealized PnL,
+        fees, volume, win rate, Sharpe ratio, and breakdown by executor type.
+
+        Args:
+            controller_id: Filter by controller ID (None for all controllers)
+
+        Returns:
+            Performance report with aggregated metrics
+
+        Example:
+            # Get report for all controllers
+            report = await client.executors.get_performance_report()
+
+            # Get report for a specific controller
+            report = await client.executors.get_performance_report(controller_id="my_controller")
+        """
+        params = {}
+        if controller_id is not None:
+            params["controller_id"] = controller_id
+        return await self._get("/executors/performance", params=params if params else None)
 
     async def get_executor(self, executor_id: str) -> Dict[str, Any]:
         """
@@ -138,23 +175,34 @@ class ExecutorsRouter(BaseRouter):
         return await self._post(f"/executors/{executor_id}/stop", json=body)
 
     # Position Hold Management
-    async def get_positions_summary(self) -> Dict[str, Any]:
+    async def get_positions_summary(
+        self,
+        controller_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Get summary of all positions held by executors.
+
+        Args:
+            controller_id: Filter positions by controller ID (optional)
 
         Returns:
             Summary of held positions
 
         Example:
             summary = await client.executors.get_positions_summary()
+            summary = await client.executors.get_positions_summary(controller_id="my_controller")
         """
-        return await self._get("/executors/positions/summary")
+        params = {}
+        if controller_id is not None:
+            params["controller_id"] = controller_id
+        return await self._get("/executors/positions/summary", params=params if params else None)
 
     async def get_position_held(
         self,
         connector_name: str,
         trading_pair: str,
-        account_name: Optional[str] = None
+        account_name: Optional[str] = None,
+        controller_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Get the position held for a specific connector and trading pair.
@@ -163,6 +211,7 @@ class ExecutorsRouter(BaseRouter):
             connector_name: Exchange connector name
             trading_pair: Trading pair (e.g., "BTC-USDT")
             account_name: Account name (optional)
+            controller_id: Controller ID (default "main" on server side)
 
         Returns:
             Position held information
@@ -175,6 +224,8 @@ class ExecutorsRouter(BaseRouter):
         params = {}
         if account_name is not None:
             params["account_name"] = account_name
+        if controller_id is not None:
+            params["controller_id"] = controller_id
         return await self._get(
             f"/executors/positions/{connector_name}/{trading_pair}",
             params=params if params else None
@@ -184,7 +235,8 @@ class ExecutorsRouter(BaseRouter):
         self,
         connector_name: str,
         trading_pair: str,
-        account_name: Optional[str] = None
+        account_name: Optional[str] = None,
+        controller_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Clear the position held for a specific connector and trading pair.
@@ -193,6 +245,7 @@ class ExecutorsRouter(BaseRouter):
             connector_name: Exchange connector name
             trading_pair: Trading pair (e.g., "BTC-USDT")
             account_name: Account name (optional)
+            controller_id: Controller ID (default "main" on server side)
 
         Returns:
             Clear operation result
@@ -205,6 +258,8 @@ class ExecutorsRouter(BaseRouter):
         params = {}
         if account_name is not None:
             params["account_name"] = account_name
+        if controller_id is not None:
+            params["controller_id"] = controller_id
         return await self._delete(
             f"/executors/positions/{connector_name}/{trading_pair}",
             params=params if params else None
