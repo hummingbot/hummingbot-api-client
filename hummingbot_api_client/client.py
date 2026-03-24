@@ -17,6 +17,7 @@ from .routers import (
     ScriptsRouter,
     TradingRouter
 )
+from .ws import WebSocketRouter
 
 
 class HummingbotAPIClient:
@@ -47,6 +48,9 @@ class HummingbotAPIClient:
         self._portfolio: Optional[PortfolioRouter] = None
         self._scripts: Optional[ScriptsRouter] = None
         self._trading: Optional[TradingRouter] = None
+        self._ws: Optional[WebSocketRouter] = None
+        self._username = username
+        self._password = password
     
     async def init(self) -> None:
         """Initialize the client session and routers."""
@@ -70,6 +74,7 @@ class HummingbotAPIClient:
             self._portfolio = PortfolioRouter(self._session, self.base_url)
             self._scripts = ScriptsRouter(self._session, self.base_url)
             self._trading = TradingRouter(self._session, self.base_url)
+            self._ws = WebSocketRouter(self._session, self.base_url, self._username, self._password)
     
     async def close(self) -> None:
         """Close the client session."""
@@ -91,6 +96,7 @@ class HummingbotAPIClient:
             self._portfolio = None
             self._scripts = None
             self._trading = None
+            self._ws = None
     
     @property
     def accounts(self) -> AccountsRouter:
@@ -196,6 +202,13 @@ class HummingbotAPIClient:
         if self._trading is None:
             raise RuntimeError("Client not initialized. Call await client.init() first.")
         return self._trading
+
+    @property
+    def ws(self) -> WebSocketRouter:
+        """Access the WebSocket router for streaming market data."""
+        if self._ws is None:
+            raise RuntimeError("Client not initialized. Call await client.init() first.")
+        return self._ws
     
     async def __aenter__(self):
         """Async context manager entry."""
