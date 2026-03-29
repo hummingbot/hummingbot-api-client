@@ -36,6 +36,55 @@ class BotOrchestrationRouter(BaseRouter):
             params["precision"] = precision
         return await self._get(f"/bot-orchestration/{bot_name}/history", params=params)
 
+    async def get_bot_lp_history(
+            self,
+            bot_name: str,
+            days: int = 0,
+            verbose: bool = False,
+            precision: Optional[int] = None,
+            timeout: float = 30.0
+    ) -> Dict[str, Any]:
+        """
+        Get LP (liquidity provider) position history for a bot.
+
+        This endpoint returns LP-specific data including position updates,
+        fees collected, and liquidity additions/removals. Use this for
+        AMM/CLMM strategies like Meteora.
+
+        Args:
+            bot_name: Name of the bot to get LP history for
+            days: Number of days of history to retrieve (0 for all)
+            verbose: Whether to include verbose output
+            precision: Decimal precision for numerical values
+            timeout: Timeout in seconds for the operation
+
+        Returns:
+            Dictionary with LP position history including:
+            - position_address: The LP position address
+            - order_action: ADD or REMOVE
+            - trading_pair: The trading pair (e.g., SOL-USDC)
+            - base_amount, quote_amount: Amounts added/removed
+            - base_fee, quote_fee: Fees collected
+            - lower_price, upper_price: Price range of position
+            - mid_price: Price at time of operation
+            - trade_fee: Transaction fees paid
+
+        Example:
+            lp_history = await client.bot_orchestration.get_bot_lp_history(
+                "my_lp_bot",
+                days=7,
+                verbose=True
+            )
+        """
+        params = {
+            "days": days,
+            "verbose": verbose,
+            "timeout": timeout
+        }
+        if precision is not None:
+            params["precision"] = precision
+        return await self._get(f"/bot-orchestration/{bot_name}/lphistory", params=params)
+
     # Bot Control Operations
     async def start_bot(
             self,
