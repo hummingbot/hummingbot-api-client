@@ -35,6 +35,7 @@ class ExecutorsRouter(BaseRouter):
             {
                 "type": "swap_executor",
                 "connector_name": "jupiter/router",
+                "network": "solana-mainnet-beta",
                 "trading_pair": "TOKEN-SOL",
                 "side": 1,  # 1=BUY, 2=SELL
                 "amount": "0.5"  # or "$10" for USD amount
@@ -44,7 +45,8 @@ class ExecutorsRouter(BaseRouter):
             {
                 "type": "lp_executor",
                 "connector_name": "meteora/clmm",
-                "trading_pair": "TOKEN-SOL",
+                "network": "solana-mainnet-beta",
+                "pool_address": "2sf5NYcY...",
                 "side": 0,  # 0=double-sided, 1=base only, 2=quote only
                 "lower_price": 0.001,
                 "upper_price": 0.002,
@@ -67,16 +69,18 @@ class ExecutorsRouter(BaseRouter):
             executor = await client.executors.create_executor({
                 "type": "swap_executor",
                 "connector_name": "jupiter/router",
+                "network": "solana-mainnet-beta",
                 "trading_pair": "WIF-SOL",
                 "side": 1,
-                "amount": "$5"
+                "amount": "0.1"
             })
 
             # Create an LP executor
             executor = await client.executors.create_executor({
                 "type": "lp_executor",
                 "connector_name": "meteora/clmm",
-                "trading_pair": "WIF-SOL",
+                "network": "solana-mainnet-beta",
+                "pool_address": "2sf5NYcY...",
                 "side": 0,
                 "lower_price": 0.5,
                 "upper_price": 1.5,
