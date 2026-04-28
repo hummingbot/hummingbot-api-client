@@ -305,6 +305,119 @@ class GatewayRouter(BaseRouter):
         return await self._delete(f"/gateway/networks/{network_id}/tokens/{token_address}")
 
     # ============================================
+    # Network Pools (Primary Pool Endpoints)
+    # ============================================
+
+    async def get_network_pools(
+        self,
+        network_id: str,
+        connector: Optional[str] = None,
+        pool_type: Optional[str] = None,
+        search: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get pools for a specific network.
+
+        Args:
+            network_id: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            connector: Optional filter by connector (e.g., 'raydium', 'meteora', 'uniswap')
+            pool_type: Optional filter by type ('amm' or 'clmm')
+            search: Optional search by trading pair or address
+
+        Example:
+            await client.gateway.get_network_pools(
+                network_id='solana-mainnet-beta',
+                connector='raydium',
+                pool_type='clmm'
+            )
+        """
+        params = {}
+        if connector:
+            params["connector"] = connector
+        if pool_type:
+            params["pool_type"] = pool_type.lower()
+        if search:
+            params["search"] = search
+        return await self._get(f"/gateway/networks/{network_id}/pools", params=params or None)
+
+    async def add_network_pool(
+        self,
+        network_id: str,
+        connector_name: str,
+        pool_type: str,
+        address: str,
+        base: Optional[str] = None,
+        quote: Optional[str] = None,
+        base_address: Optional[str] = None,
+        quote_address: Optional[str] = None,
+        fee_pct: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Add a pool to a specific network.
+
+        Args:
+            network_id: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            connector_name: DEX connector name (e.g., 'raydium', 'meteora')
+            pool_type: Pool type ('amm' or 'clmm')
+            address: Pool contract address
+            base: Optional base token symbol
+            quote: Optional quote token symbol
+            base_address: Optional base token address
+            quote_address: Optional quote token address
+            fee_pct: Optional fee percentage
+
+        Example:
+            await client.gateway.add_network_pool(
+                network_id='solana-mainnet-beta',
+                connector_name='raydium',
+                pool_type='clmm',
+                address='58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2'
+            )
+        """
+        pool_data = {
+            "connector_name": connector_name,
+            "type": pool_type.lower(),
+            "address": address
+        }
+        if base:
+            pool_data["base"] = base
+        if quote:
+            pool_data["quote"] = quote
+        if base_address:
+            pool_data["base_address"] = base_address
+        if quote_address:
+            pool_data["quote_address"] = quote_address
+        if fee_pct is not None:
+            pool_data["fee_pct"] = fee_pct
+
+        return await self._post(f"/gateway/networks/{network_id}/pools", json=pool_data)
+
+    async def delete_network_pool(
+        self,
+        network_id: str,
+        address: str,
+        pool_type: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Delete a pool from a specific network.
+
+        Args:
+            network_id: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            address: Pool contract address to remove
+            pool_type: Optional pool type ('amm' or 'clmm')
+
+        Example:
+            await client.gateway.delete_network_pool(
+                network_id='solana-mainnet-beta',
+                address='58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2'
+            )
+        """
+        params = {}
+        if pool_type:
+            params["pool_type"] = pool_type.lower()
+        return await self._delete(f"/gateway/networks/{network_id}/pools/{address}", params=params or None)
+
+    # ============================================
     # Wallets
     # ============================================
 
