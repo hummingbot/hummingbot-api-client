@@ -80,3 +80,23 @@ class AccountsRouter(BaseRouter):
     async def list_gateway_wallets(self) -> List[Dict]:
         """List all wallets."""
         return await self._get("/accounts/gateway/wallets/")
+
+    async def set_default_gateway_wallet(
+        self,
+        chain: str,
+        address: str
+    ) -> Dict[str, Any]:
+        """
+        Set a wallet as the default for a chain.
+
+        Args:
+            chain: Blockchain chain (e.g., 'solana', 'ethereum')
+            address: Wallet address to set as default
+
+        Returns:
+            Success message with chain and address
+        """
+        return await self._post(
+            "/accounts/gateway/wallet/set-default",
+            json={"chain": chain, "address": address}
+        )

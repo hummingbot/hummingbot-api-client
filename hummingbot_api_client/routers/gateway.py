@@ -304,6 +304,29 @@ class GatewayRouter(BaseRouter):
         """
         return await self._delete(f"/gateway/networks/{network_id}/tokens/{token_address}")
 
+    async def save_network_token(
+        self,
+        network_id: str,
+        token_address: str
+    ) -> Dict[str, Any]:
+        """
+        Save a token by address - auto-fetches token info from GeckoTerminal.
+
+        This is the simplest way to add a token. Just provide the address and
+        the API will fetch symbol, name, and decimals automatically.
+
+        Args:
+            network_id: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            token_address: Token contract address
+
+        Example:
+            await client.gateway.save_network_token(
+                network_id='solana-mainnet-beta',
+                token_address='9QFfgxdSqH5zT7j6rZb1y6SZhw2aFtcQu2r6BuYpump'
+            )
+        """
+        return await self._post(f"/gateway/networks/{network_id}/tokens/save/{token_address}")
+
     # ============================================
     # Network Pools (Primary Pool Endpoints)
     # ============================================
@@ -416,6 +439,29 @@ class GatewayRouter(BaseRouter):
         if pool_type:
             params["pool_type"] = pool_type.lower()
         return await self._delete(f"/gateway/networks/{network_id}/pools/{address}", params=params or None)
+
+    async def save_network_pool(
+        self,
+        network_id: str,
+        pool_address: str
+    ) -> Dict[str, Any]:
+        """
+        Save a pool by address - auto-fetches pool info from the blockchain.
+
+        This is the simplest way to add a pool. Just provide the address and
+        the API will fetch connector, type, tokens, and fees automatically.
+
+        Args:
+            network_id: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            pool_address: Pool contract address
+
+        Example:
+            await client.gateway.save_network_pool(
+                network_id='solana-mainnet-beta',
+                pool_address='58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2'
+            )
+        """
+        return await self._post(f"/gateway/networks/{network_id}/pools/save/{pool_address}")
 
     # ============================================
     # Wallets
