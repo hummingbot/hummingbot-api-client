@@ -92,6 +92,40 @@ class GatewayRouter(BaseRouter):
         return await self._post(f"/gateway/connectors/{connector_name}", json=config_updates)
 
     # ============================================
+    # API Keys
+    # ============================================
+
+    async def get_api_keys(self) -> Dict[str, Any]:
+        """
+        Get all configured API keys from Gateway.
+
+        Returns a dict mapping provider name to API key value.
+
+        Example:
+            api_keys = await client.gateway.get_api_keys()
+            # Returns: {"helius": "abc123", "infura": "xyz789", "coingecko": "...", "etherscan": ""}
+        """
+        return await self._get("/gateway/apiKeys")
+
+    async def update_api_keys(self, api_keys: Dict[str, str]) -> Dict[str, Any]:
+        """
+        Update API keys in Gateway configuration.
+
+        Args:
+            api_keys: Dict mapping provider name to API key value
+                     (e.g., {"helius": "abc123", "infura": "xyz789"})
+
+        Note: After updating API keys, restart Gateway for changes to take effect.
+
+        Example:
+            await client.gateway.update_api_keys({
+                "helius": "new-helius-key",
+                "infura": "new-infura-key"
+            })
+        """
+        return await self._post("/gateway/apiKeys", json={"api_keys": api_keys})
+
+    # ============================================
     # Chains (Networks) and Tokens
     # ============================================
 
