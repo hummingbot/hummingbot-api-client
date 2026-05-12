@@ -92,6 +92,40 @@ class GatewayRouter(BaseRouter):
         return await self._post(f"/gateway/connectors/{connector_name}", json=config_updates)
 
     # ============================================
+    # API Keys
+    # ============================================
+
+    async def get_api_keys(self) -> Dict[str, Any]:
+        """
+        Get all configured API keys from Gateway.
+
+        Returns a dict mapping provider name to API key value.
+
+        Example:
+            api_keys = await client.gateway.get_api_keys()
+            # Returns: {"helius": "abc123", "infura": "xyz789", "coingecko": "...", "etherscan": ""}
+        """
+        return await self._get("/gateway/apiKeys")
+
+    async def update_api_keys(self, api_keys: Dict[str, str]) -> Dict[str, Any]:
+        """
+        Update API keys in Gateway configuration.
+
+        Args:
+            api_keys: Dict mapping provider name to API key value
+                     (e.g., {"helius": "abc123", "infura": "xyz789"})
+
+        Note: After updating API keys, restart Gateway for changes to take effect.
+
+        Example:
+            await client.gateway.update_api_keys({
+                "helius": "new-helius-key",
+                "infura": "new-infura-key"
+            })
+        """
+        return await self._post("/gateway/apiKeys", json={"api_keys": api_keys})
+
+    # ============================================
     # Chains (Networks) and Tokens
     # ============================================
 
@@ -303,6 +337,165 @@ class GatewayRouter(BaseRouter):
             )
         """
         return await self._delete(f"/gateway/networks/{network_id}/tokens/{token_address}")
+
+    async def save_network_token(
+        self,
+        network_id: str,
+        token_address: str
+    ) -> Dict[str, Any]:
+        """
+        Save a token by address - auto-fetches token info from GeckoTerminal.
+
+        This is the simplest way to add a token. Just provide the address and
+        the API will fetch symbol, name, and decimals automatically.
+
+        Args:
+            network_id: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            token_address: Token contract address
+
+        Example:
+            await client.gateway.save_network_token(
+                network_id='solana-mainnet-beta',
+                token_address='9QFfgxdSqH5zT7j6rZb1y6SZhw2aFtcQu2r6BuYpump'
+            )
+        """
+        return await self._post(f"/gateway/networks/{network_id}/tokens/save/{token_address}")
+
+    # ============================================
+    # Network Pools (Primary Pool Endpoints)
+    # ============================================
+
+    async def get_network_pools(
+        self,
+        network_id: str,
+        connector: Optional[str] = None,
+        pool_type: Optional[str] = None,
+        search: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get pools for a specific network.
+
+        Args:
+            network_id: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            connector: Optional filter by connector (e.g., 'raydium', 'meteora', 'uniswap')
+            pool_type: Optional filter by type ('amm' or 'clmm')
+            search: Optional search by trading pair or address
+
+        Example:
+            await client.gateway.get_network_pools(
+                network_id='solana-mainnet-beta',
+                connector='raydium',
+                pool_type='clmm'
+            )
+        """
+        params = {}
+        if connector:
+            params["connector"] = connector
+        if pool_type:
+            params["pool_type"] = pool_type.lower()
+        if search:
+            params["search"] = search
+        return await self._get(f"/gateway/networks/{network_id}/pools", params=params or None)
+
+    async def add_network_pool(
+        self,
+        network_id: str,
+        connector_name: str,
+        pool_type: str,
+        address: str,
+        base: Optional[str] = None,
+        quote: Optional[str] = None,
+        base_address: Optional[str] = None,
+        quote_address: Optional[str] = None,
+        fee_pct: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Add a pool to a specific network.
+
+        Args:
+            network_id: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            connector_name: DEX connector name (e.g., 'raydium', 'meteora')
+            pool_type: Pool type ('amm' or 'clmm')
+            address: Pool contract address
+            base: Optional base token symbol
+            quote: Optional quote token symbol
+            base_address: Optional base token address
+            quote_address: Optional quote token address
+            fee_pct: Optional fee percentage
+
+        Example:
+            await client.gateway.add_network_pool(
+                network_id='solana-mainnet-beta',
+                connector_name='raydium',
+                pool_type='clmm',
+                address='58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2'
+            )
+        """
+        pool_data = {
+            "connector_name": connector_name,
+            "type": pool_type.lower(),
+            "address": address
+        }
+        if base:
+            pool_data["base"] = base
+        if quote:
+            pool_data["quote"] = quote
+        if base_address:
+            pool_data["base_address"] = base_address
+        if quote_address:
+            pool_data["quote_address"] = quote_address
+        if fee_pct is not None:
+            pool_data["fee_pct"] = fee_pct
+
+        return await self._post(f"/gateway/networks/{network_id}/pools", json=pool_data)
+
+    async def delete_network_pool(
+        self,
+        network_id: str,
+        address: str,
+        pool_type: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Delete a pool from a specific network.
+
+        Args:
+            network_id: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            address: Pool contract address to remove
+            pool_type: Optional pool type ('amm' or 'clmm')
+
+        Example:
+            await client.gateway.delete_network_pool(
+                network_id='solana-mainnet-beta',
+                address='58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2'
+            )
+        """
+        params = {}
+        if pool_type:
+            params["pool_type"] = pool_type.lower()
+        return await self._delete(f"/gateway/networks/{network_id}/pools/{address}", params=params or None)
+
+    async def save_network_pool(
+        self,
+        network_id: str,
+        pool_address: str
+    ) -> Dict[str, Any]:
+        """
+        Save a pool by address - auto-fetches pool info from the blockchain.
+
+        This is the simplest way to add a pool. Just provide the address and
+        the API will fetch connector, type, tokens, and fees automatically.
+
+        Args:
+            network_id: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            pool_address: Pool contract address
+
+        Example:
+            await client.gateway.save_network_pool(
+                network_id='solana-mainnet-beta',
+                pool_address='58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2'
+            )
+        """
+        return await self._post(f"/gateway/networks/{network_id}/pools/save/{pool_address}")
 
     # ============================================
     # Wallets

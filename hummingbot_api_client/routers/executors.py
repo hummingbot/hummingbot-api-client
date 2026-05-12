@@ -149,6 +149,32 @@ class ExecutorsRouter(BaseRouter):
         """
         return await self._get(f"/executors/{executor_id}")
 
+    async def get_executor_logs(
+        self,
+        executor_id: str,
+        limit: int = 100,
+        level: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get logs for a specific executor.
+
+        Args:
+            executor_id: The executor ID to get logs for
+            limit: Maximum number of log entries to return (default 100)
+            level: Filter by log level (e.g., 'INFO', 'WARNING', 'ERROR')
+
+        Returns:
+            Executor log entries
+
+        Example:
+            logs = await client.executors.get_executor_logs("exec_123", limit=50)
+            logs = await client.executors.get_executor_logs("exec_123", level="ERROR")
+        """
+        params = {"limit": limit}
+        if level is not None:
+            params["level"] = level
+        return await self._get(f"/executors/{executor_id}/logs", params=params)
+
     async def stop_executor(
         self,
         executor_id: str,
