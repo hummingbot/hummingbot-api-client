@@ -10,12 +10,8 @@ class BotOrchestrationRouter(BaseRouter):
         """Get the status of all active bots."""
         return await self._get("/bot-orchestration/status")
 
-    async def get_mqtt_status(self) -> Dict[str, Any]:
-        """Get MQTT connection status and discovered bots."""
-        return await self._get("/bot-orchestration/mqtt")
-
     async def get_bot_status(self, bot_name: str) -> Dict[str, Any]:
-        """Get the status of a specific bot."""
+        """Get the status of a specific bot including performance, logs, and activity."""
         return await self._get(f"/bot-orchestration/{bot_name}/status")
 
     async def get_bot_history(
@@ -43,35 +39,23 @@ class BotOrchestrationRouter(BaseRouter):
             log_level: Optional[str] = None,
             script: Optional[str] = None,
             conf: Optional[str] = None,
-            async_backend: bool = False
+            is_quickstart: bool = False,
+            async_backend: bool = True
     ) -> Dict[str, Any]:
         """
         Start a bot with the specified configuration.
-        
+
         Args:
             bot_name: Name of the bot instance to start
             log_level: Logging level ("DEBUG", "INFO", "WARNING", "ERROR")
             script: Script name to run (without .py extension)
             conf: Configuration file name (without .yml extension)
+            is_quickstart: Whether to run in quickstart mode
             async_backend: Whether to run in async backend mode
-            
-        Returns:
-            Dictionary with status and response from bot start operation
-            
-        Example:
-            # Start a bot with default settings
-            result = await client.bot_orchestration.start_bot("my_trading_bot")
-            
-            # Start a bot with specific script and config
-            result = await client.bot_orchestration.start_bot(
-                "my_bot", 
-                log_level="INFO", 
-                script="directional_strategy_v3", 
-                conf="my_strategy_config"
-            )
         """
         start_bot_action = {
             "bot_name": bot_name,
+            "is_quickstart": is_quickstart,
             "async_backend": async_backend
         }
         if log_level is not None:
@@ -87,28 +71,15 @@ class BotOrchestrationRouter(BaseRouter):
             self,
             bot_name: str,
             skip_order_cancellation: bool = False,
-            async_backend: bool = False
+            async_backend: bool = True
     ) -> Dict[str, Any]:
         """
         Stop a bot with the specified configuration.
-        
+
         Args:
             bot_name: Name of the bot instance to stop
             skip_order_cancellation: Whether to skip cancelling open orders when stopping
             async_backend: Whether to run in async backend mode
-            
-        Returns:
-            Dictionary with status and response from bot stop operation
-            
-        Example:
-            # Stop a bot and cancel open orders
-            result = await client.bot_orchestration.stop_bot("my_trading_bot")
-            
-            # Stop a bot without cancelling orders
-            result = await client.bot_orchestration.stop_bot(
-                "my_bot", 
-                skip_order_cancellation=True
-            )
         """
         stop_bot_action = {
             "bot_name": bot_name,
@@ -116,6 +87,36 @@ class BotOrchestrationRouter(BaseRouter):
             "async_backend": async_backend
         }
         return await self._post("/bot-orchestration/stop-bot", json=stop_bot_action)
+
+    async def import_strategy_for_bot(
+            self,
+            bot_name: str,
+            strategy: str
+    ) -> Dict[str, Any]:
+        """
+        Import a strategy configuration for a bot.
+
+        Args:
+            bot_name: Name of the bot instance
+            strategy: Strategy name to import
+        """
+        data = {"strategy": strategy}
+        return await self._post(f"/bot-orchestration/{bot_name}/import-strategy", json=data)
+
+    async def configure_bot(
+            self,
+            bot_name: str,
+            params: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Configure bot parameters.
+
+        Args:
+            bot_name: Name of the bot instance
+            params: Dictionary of configuration parameters
+        """
+        data = {"params": params}
+        return await self._post(f"/bot-orchestration/{bot_name}/config", json=data)
 
     async def stop_and_archive_bot(
             self,
@@ -126,35 +127,12 @@ class BotOrchestrationRouter(BaseRouter):
     ) -> Dict[str, Any]:
         """
         Gracefully stop a bot and archive its data in the background.
-        
-        This initiates a background task that will:
-        1. Stop the bot trading process via MQTT
-        2. Wait 15 seconds for graceful shutdown
-        3. Monitor and stop the Docker container
-        4. Archive the bot data (locally or to S3)
-        5. Remove the container
-        
-        Returns immediately with a success message while the process continues in the background.
-        
+
         Args:
             bot_name: Name of the bot instance to stop and archive
             skip_order_cancellation: Whether to skip cancelling open orders when stopping
             archive_locally: Whether to archive locally (True) or to S3 (False)
             s3_bucket: S3 bucket name for archiving (required if archive_locally=False)
-            
-        Returns:
-            Dictionary with status and details about the background operation
-            
-        Example:
-            # Stop and archive locally
-            result = await client.bot_orchestration.stop_and_archive_bot("my_bot")
-            
-            # Stop and archive to S3
-            result = await client.bot_orchestration.stop_and_archive_bot(
-                "my_bot", 
-                archive_locally=False, 
-                s3_bucket="my-bot-archives"
-            )
         """
         url = f"/bot-orchestration/stop-and-archive-bot/{bot_name}"
         params = {
@@ -176,25 +154,13 @@ class BotOrchestrationRouter(BaseRouter):
     ) -> Dict[str, Any]:
         """
         Creates and autostart a v2 script with a configuration if present.
-        
+
         Args:
             instance_name: Unique name for the bot instance
             credentials_profile: Name of the credentials profile to use
             script: Script name to run (without .py extension)
             script_config: Script configuration file name (without .yml extension)
             image: Docker image for the Hummingbot instance
-            
-        Returns:
-            Dictionary with creation response and instance details
-            
-        Example:
-            # Deploy a simple script bot
-            result = await client.bot_orchestration.deploy_v2_script(
-                "my_trading_bot",
-                "binance_credentials",
-                script="directional_strategy_v3",
-                script_config="my_strategy_config"
-            )
         """
         script_deployment = {
             "instance_name": instance_name,
@@ -218,28 +184,15 @@ class BotOrchestrationRouter(BaseRouter):
             image: str = "hummingbot/hummingbot:latest"
     ) -> Dict[str, Any]:
         """
-        Deploy a V2 strategy with controllers by generating the script config and creating the instance.
-        This endpoint simplifies the deployment process for V2 controller strategies.
-        
+        Deploy a V2 strategy with controllers.
+
         Args:
             instance_name: Unique name for the bot instance
             credentials_profile: Name of the credentials profile to use
             controllers_config: List of controller configuration files (without .yml extension)
-            max_global_drawdown_quote: Maximum allowed global drawdown in quote asset (usually USDT)
+            max_global_drawdown_quote: Maximum allowed global drawdown in quote asset
             max_controller_drawdown_quote: Maximum allowed per-controller drawdown in quote asset
             image: Docker image for the Hummingbot instance
-            
-        Returns:
-            Dictionary with deployment response and generated configuration details
-            
-        Example:
-            # Deploy a controller-based strategy
-            result = await client.bot_orchestration.deploy_v2_controllers(
-                "my_controller_bot",
-                "binance_credentials",
-                ["market_maker_v1", "arbitrage_v2"],
-                max_global_drawdown_quote=1000.0
-            )
         """
         controller_deployment = {
             "instance_name": instance_name,
@@ -254,111 +207,61 @@ class BotOrchestrationRouter(BaseRouter):
 
         return await self._post("/bot-orchestration/deploy-v2-controllers", json=controller_deployment)
 
-    # Convenience methods for common operations
-    async def restart_bot(
+    # Controller Performance Operations
+    async def get_controller_performance_history(
             self,
-            bot_name: str,
-            skip_order_cancellation: bool = False
+            bot_name: Optional[str] = None,
+            controller_id: Optional[str] = None,
+            limit: Optional[int] = None,
+            cursor: Optional[str] = None,
+            start_time: Optional[str] = None,
+            end_time: Optional[str] = None,
+            interval: str = "5m"
     ) -> Dict[str, Any]:
         """
-        Restart a bot by stopping and then starting it again.
-        
+        Get historical controller performance with pagination and interval sampling.
+
         Args:
-            bot_name: Name of the bot instance to restart
-            skip_order_cancellation: Whether to skip cancelling open orders when stopping
-            
-        Returns:
-            Dictionary with restart operation results
-            
-        Example:
-            result = await client.bot_orchestration.restart_bot("my_trading_bot")
+            bot_name: Filter by bot name
+            controller_id: Filter by controller ID
+            limit: Maximum number of results to return
+            cursor: Pagination cursor for next page
+            start_time: Start time filter (ISO format)
+            end_time: End time filter (ISO format)
+            interval: Sampling interval (e.g., "5m", "1h", "1d")
         """
-        # First stop the bot
-        stop_result = await self.stop_bot(bot_name, skip_order_cancellation)
+        params = {"interval": interval}
+        if bot_name is not None:
+            params["bot_name"] = bot_name
+        if controller_id is not None:
+            params["controller_id"] = controller_id
+        if limit is not None:
+            params["limit"] = limit
+        if cursor is not None:
+            params["cursor"] = cursor
+        if start_time is not None:
+            params["start_time"] = start_time
+        if end_time is not None:
+            params["end_time"] = end_time
 
-        if not stop_result.get("status") == "success":
-            return {
-                "status": "error",
-                "message": "Failed to stop bot",
-                "stop_result": stop_result
-            }
+        return await self._get("/bot-orchestration/controller-performance/history", params=params)
 
-        # Then start the bot
-        start_result = await self.start_bot(bot_name)
-
-        return {
-            "status": "success" if start_result.get("status") == "success" else "error",
-            "message": "Bot restarted successfully" if start_result.get(
-                "status") == "success" else "Failed to start bot after stopping",
-            "stop_result": stop_result,
-            "start_result": start_result
-        }
-
-    async def get_bot_performance(
+    async def get_latest_controller_performance(
             self,
-            bot_name: str,
-            days: int = 7
+            bot_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Get bot performance metrics for a specific time period.
-        
+        Get the most recent performance snapshot for each bot/controller.
+
         Args:
-            bot_name: Name of the bot to get performance for
-            days: Number of days to analyze (default: 7)
-            
-        Returns:
-            Dictionary with performance metrics and trading history
-            
-        Example:
-            # Get last 7 days performance
-            performance = await client.bot_orchestration.get_bot_performance("my_bot")
-            
-            # Get last 30 days performance
-            performance = await client.bot_orchestration.get_bot_performance("my_bot", 30)
+            bot_name: Filter by bot name (optional)
         """
-        # Get bot status for current metrics
-        status = await self.get_bot_status(bot_name)
+        params = {}
+        if bot_name is not None:
+            params["bot_name"] = bot_name
+        return await self._get("/bot-orchestration/controller-performance/latest", params=params)
 
-        # Get historical performance
-        history = await self.get_bot_history(bot_name, days=days, verbose=True)
-
-        return {
-            "bot_name": bot_name,
-            "period_days": days,
-            "current_status": status,
-            "trading_history": history,
-            "timestamp": status.get("data", {}).get("timestamp") if status.get("status") == "success" else None
-        }
-
-    async def list_all_bots(self) -> Dict[str, Any]:
-        """
-        Get a comprehensive list of all bots including active, discovered, and MQTT status.
-        
-        Returns:
-            Dictionary with all bot information
-            
-        Example:
-            all_bots = await client.bot_orchestration.list_all_bots()
-        """
-        # Get active bots status
-        active_status = await self.get_active_bots_status()
-
-        # Get MQTT status and discovered bots
-        mqtt_status = await self.get_mqtt_status()
-
-        return {
-            "active_bots": active_status,
-            "mqtt_status": mqtt_status,
-            "summary": {
-                "total_active_bots": len(mqtt_status.get("data", {}).get("active_bots", [])) if mqtt_status.get(
-                    "status") == "success" else 0,
-                "total_discovered_bots": len(mqtt_status.get("data", {}).get("discovered_bots", [])) if mqtt_status.get(
-                    "status") == "success" else 0,
-                "mqtt_connected": mqtt_status.get("data", {}).get("mqtt_connected", False) if mqtt_status.get(
-                    "status") == "success" else False
-            }
-        }
-
+    # Bot Runs
     async def get_bot_runs(
             self,
             bot_name: Optional[str] = None,
@@ -382,20 +285,6 @@ class BotOrchestrationRouter(BaseRouter):
             deployment_status: Filter by deployment status (DEPLOYED, FAILED, ARCHIVED)
             limit: Maximum number of results to return
             offset: Number of results to skip
-
-        Returns:
-            Dictionary with bot runs data including total count and pagination info
-
-        Example:
-            # Get all bot runs
-            result = await client.bot_orchestration.get_bot_runs()
-
-            # Get bot runs with filtering
-            result = await client.bot_orchestration.get_bot_runs(
-                bot_name="my_bot",
-                run_status="RUNNING",
-                limit=50
-            )
         """
         params = {
             "limit": limit,
