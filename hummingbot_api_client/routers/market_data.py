@@ -121,7 +121,27 @@ class MarketDataRouter(BaseRouter):
             List of connector names that can be used for fetching candle data
         """
         return await self._get("/market-data/available-candle-connectors")
-    
+
+    async def get_24h_volumes(self, connector_name: str) -> Dict[str, Any]:
+        """
+        Get 24h quote-denominated volume per trading pair for a connector, keyed by
+        Hummingbot trading pair (BASE-QUOTE) so it joins with trading rules.
+
+        A value of 0.0 marks a listed-but-untraded market (e.g. Hyperliquid's
+        permissionless tokenized-equity spot pairs like AAPL-USDC), so clients can
+        rank pairs by volume and hide untraded ones.
+
+        Supported connectors: hyperliquid, hyperliquid_perpetual, binance,
+        binance_perpetual, okx, okx_perpetual.
+
+        Args:
+            connector_name: Exchange connector name
+
+        Returns:
+            {"connector": str, "volumes": {trading_pair: quote_volume_24h}}
+        """
+        return await self._get(f"/market-data/volumes/{connector_name}")
+
     async def get_active_feeds(self) -> Dict[str, Any]:
         """Get information about currently active market data feeds."""
         return await self._get("/market-data/active-feeds")
