@@ -47,7 +47,7 @@ class GatewaySwapRouter(BaseRouter):
             "trading_pair": trading_pair,
             "side": side,
             "amount": str(amount),
-            "slippage_pct": str(slippage_pct) if slippage_pct else "1.0"
+            "slippage_pct": str(slippage_pct) if slippage_pct is not None else "1.0"
         }
         return await self._post("/gateway/swap/quote", json=request_data)
 
@@ -93,7 +93,7 @@ class GatewaySwapRouter(BaseRouter):
             "trading_pair": trading_pair,
             "side": side,
             "amount": str(amount),
-            "slippage_pct": str(slippage_pct) if slippage_pct else "1.0"
+            "slippage_pct": str(slippage_pct) if slippage_pct is not None else "1.0"
         }
         if wallet_address:
             request_data["wallet_address"] = wallet_address
