@@ -152,7 +152,7 @@ class GatewayCLMMRouter(BaseRouter):
             "pool_address": pool_address,
             "lower_price": str(lower_price),
             "upper_price": str(upper_price),
-            "slippage_pct": str(slippage_pct) if slippage_pct else "1.0"
+            "slippage_pct": str(slippage_pct) if slippage_pct is not None else "1.0"
         }
         if base_token_amount is not None:
             request_data["base_token_amount"] = str(base_token_amount)
@@ -164,6 +164,95 @@ class GatewayCLMMRouter(BaseRouter):
             request_data["extra_params"] = extra_params
 
         return await self._post("/gateway/clmm/open", json=request_data)
+
+    async def add_liquidity(
+        self,
+        connector: str,
+        network: str,
+        position_address: str,
+        base_token_amount: Optional[Decimal] = None,
+        quote_token_amount: Optional[Decimal] = None,
+        slippage_pct: Optional[Decimal] = None,
+        wallet_address: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Add MORE liquidity to an EXISTING CLMM position.
+
+        Args:
+            connector: CLMM connector (e.g., 'meteora')
+            network: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            position_address: Existing position address to add liquidity to
+            base_token_amount: Amount of base token to add (optional)
+            quote_token_amount: Amount of quote token to add (optional)
+            slippage_pct: Slippage percentage tolerance (default: 1.0)
+            wallet_address: Wallet address (uses default if not provided)
+
+        Returns:
+            Dict containing transaction_hash, position_address, and status
+
+        Example:
+            result = await client.gateway_clmm.add_liquidity(
+                connector='meteora',
+                network='solana-mainnet-beta',
+                position_address='...',
+                base_token_amount=Decimal('0.5'),
+                quote_token_amount=Decimal('50')
+            )
+        """
+        request_data = {
+            "connector": connector,
+            "network": network,
+            "position_address": position_address,
+            "slippage_pct": str(slippage_pct) if slippage_pct is not None else "1.0"
+        }
+        if base_token_amount is not None:
+            request_data["base_token_amount"] = str(base_token_amount)
+        if quote_token_amount is not None:
+            request_data["quote_token_amount"] = str(quote_token_amount)
+        if wallet_address:
+            request_data["wallet_address"] = wallet_address
+
+        return await self._post("/gateway/clmm/add", json=request_data)
+
+    async def remove_liquidity(
+        self,
+        connector: str,
+        network: str,
+        position_address: str,
+        percentage: Decimal,
+        wallet_address: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Remove SOME liquidity from a CLMM position (partial removal).
+
+        Args:
+            connector: CLMM connector (e.g., 'meteora')
+            network: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            position_address: Position address to remove liquidity from
+            percentage: Percentage of liquidity to remove (0-100)
+            wallet_address: Wallet address (uses default if not provided)
+
+        Returns:
+            Dict containing transaction_hash, position_address, percentage, and status
+
+        Example:
+            result = await client.gateway_clmm.remove_liquidity(
+                connector='meteora',
+                network='solana-mainnet-beta',
+                position_address='...',
+                percentage=Decimal('50')
+            )
+        """
+        request_data = {
+            "connector": connector,
+            "network": network,
+            "position_address": position_address,
+            "percentage": str(percentage)
+        }
+        if wallet_address:
+            request_data["wallet_address"] = wallet_address
+
+        return await self._post("/gateway/clmm/remove", json=request_data)
 
     async def close_position(
         self,
