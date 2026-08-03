@@ -193,6 +193,44 @@ class MarketDataRouter(BaseRouter):
 
         return await self._get("/market-data/tickers", params=params)
 
+    async def get_rates(
+        self,
+        trading_pairs: Union[str, List[str]],
+        connector: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Resolve cross-rates for trading pairs from the collected ticker pool.
+
+        Rates are resolved via direct, reverse or bridged paths, so a pair no exchange
+        lists directly still prices as long as the pool bridges it.
+
+        Note this is the market-data pool, not the rate oracle: for the oracle's own
+        rates use `client.rate_oracle.get_rates`.
+
+        Args:
+            trading_pairs: Single trading pair or list of trading pairs (e.g., "BTC-USDT"
+                or ["BTC-USDT", "ETH-USDT"])
+            connector: Resolve using only this connector's tickers. Omit to use the merged
+                multi-exchange pool.
+
+        Returns:
+            The configured quote_token, the connector used (if scoped) and a
+            "rates" mapping of trading pair to rate — None for pairs the pool
+            cannot resolve.
+
+        Example:
+            rates = await client.market_data.get_rates("BTC-USDT")
+            rates = await client.market_data.get_rates(["BTC-USDT", "ETH-BTC"], connector="binance")
+        """
+        if isinstance(trading_pairs, str):
+            trading_pairs = [trading_pairs]
+
+        rate_request: Dict[str, Any] = {"trading_pairs": trading_pairs}
+        if connector is not None:
+            rate_request["connector"] = connector
+
+        return await self._post("/market-data/rates", json=rate_request)
+
     async def get_funding_info(self, connector_name: str, trading_pair: str) -> Dict[str, Any]:
         """
         Get funding information for a perpetual trading pair.
