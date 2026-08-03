@@ -158,7 +158,41 @@ class MarketDataRouter(BaseRouter):
             "trading_pairs": trading_pairs
         }
         return await self._post("/market-data/prices", json=price_request)
-    
+
+    async def get_tickers(
+        self,
+        connectors: Optional[Union[str, List[str]]] = None,
+        refresh: bool = False,
+        max_age: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Get tickers grouped by connector, with 24h base and quote volume where available.
+
+        Args:
+            connectors: Single connector or list of connectors to restrict to. Omit to
+                return the whole collected pool.
+            refresh: Force a fresh fetch, ignoring the cache
+            max_age: Accept cached tickers up to this age in seconds
+
+        Returns:
+            Tickers grouped by connector, plus per-connector counts, updated_at and errors.
+            A connector that fails is reported under "errors" without dropping the others.
+
+        Example:
+            tickers = await client.market_data.get_tickers()
+            tickers = await client.market_data.get_tickers("binance")
+            tickers = await client.market_data.get_tickers(["binance", "kucoin"], refresh=True)
+        """
+        params = {"refresh": str(refresh).lower()}
+        if connectors is not None:
+            if isinstance(connectors, str):
+                connectors = [connectors]
+            params["connectors"] = ",".join(connectors)
+        if max_age is not None:
+            params["max_age"] = max_age
+
+        return await self._get("/market-data/tickers", params=params)
+
     async def get_funding_info(self, connector_name: str, trading_pair: str) -> Dict[str, Any]:
         """
         Get funding information for a perpetual trading pair.
