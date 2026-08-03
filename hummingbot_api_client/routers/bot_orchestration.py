@@ -271,7 +271,8 @@ class BotOrchestrationRouter(BaseRouter):
             run_status: Optional[str] = None,
             deployment_status: Optional[str] = None,
             limit: int = 100,
-            offset: int = 0
+            offset: int = 0,
+            include_final_status: bool = False
     ) -> Dict[str, Any]:
         """
         Get bot runs with optional filtering.
@@ -285,10 +286,14 @@ class BotOrchestrationRouter(BaseRouter):
             deployment_status: Filter by deployment status (DEPLOYED, FAILED, ARCHIVED)
             limit: Maximum number of results to return
             offset: Number of results to skip
+            include_final_status: Include the final status snapshot in each run. Off by
+                default because the blob can be ~89 KB per record (~99% of the payload);
+                use get_bot_run() to fetch it for a single run.
         """
         params = {
             "limit": limit,
-            "offset": offset
+            "offset": offset,
+            "include_final_status": str(include_final_status).lower()
         }
         if bot_name is not None:
             params["bot_name"] = bot_name
@@ -304,6 +309,15 @@ class BotOrchestrationRouter(BaseRouter):
             params["deployment_status"] = deployment_status
 
         return await self._get("/bot-orchestration/bot-runs", params=params)
+
+    async def get_bot_run(self, bot_run_id: int) -> Dict[str, Any]:
+        """
+        Get a single bot run by ID, including its final status snapshot.
+
+        Args:
+            bot_run_id: ID of the bot run
+        """
+        return await self._get(f"/bot-orchestration/bot-runs/{bot_run_id}")
 
     async def delete_bot_run(self, bot_run_id: int) -> Dict[str, Any]:
         """
