@@ -10,6 +10,7 @@ from .executors import ExecutorsRouter
 from .gateway import GatewayRouter
 from .gateway_swap import GatewaySwapRouter
 from .gateway_clmm import GatewayCLMMRouter
+from .gateway_amm import GatewayAMMRouter
 from .market_data import MarketDataRouter
 from .portfolio import PortfolioRouter
 from .rate_oracle import RateOracleRouter
@@ -29,6 +30,7 @@ __all__ = [
     "GatewayRouter",
     "GatewaySwapRouter",
     "GatewayCLMMRouter",
+    "GatewayAMMRouter",
     "MarketDataRouter",
     "PortfolioRouter",
     "RateOracleRouter",

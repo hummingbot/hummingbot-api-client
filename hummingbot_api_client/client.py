@@ -11,6 +11,7 @@ from .routers import (
     ExecutorsRouter,
     GatewayRouter,
     GatewaySwapRouter,
+    GatewayAMMRouter,
     GatewayCLMMRouter,
     MarketDataRouter,
     PortfolioRouter,
@@ -45,6 +46,7 @@ class HummingbotAPIClient:
         self._gateway: Optional[GatewayRouter] = None
         self._gateway_swap: Optional[GatewaySwapRouter] = None
         self._gateway_clmm: Optional[GatewayCLMMRouter] = None
+        self._gateway_amm: Optional[GatewayAMMRouter] = None
         self._market_data: Optional[MarketDataRouter] = None
         self._portfolio: Optional[PortfolioRouter] = None
         self._rate_oracle: Optional[RateOracleRouter] = None
@@ -72,6 +74,7 @@ class HummingbotAPIClient:
             self._gateway = GatewayRouter(self._session, self.base_url)
             self._gateway_swap = GatewaySwapRouter(self._session, self.base_url)
             self._gateway_clmm = GatewayCLMMRouter(self._session, self.base_url)
+            self._gateway_amm = GatewayAMMRouter(self._session, self.base_url)
             self._market_data = MarketDataRouter(self._session, self.base_url)
             self._portfolio = PortfolioRouter(self._session, self.base_url)
             self._rate_oracle = RateOracleRouter(self._session, self.base_url)
@@ -95,6 +98,7 @@ class HummingbotAPIClient:
             self._gateway = None
             self._gateway_swap = None
             self._gateway_clmm = None
+            self._gateway_amm = None
             self._market_data = None
             self._portfolio = None
             self._rate_oracle = None
@@ -178,6 +182,13 @@ class HummingbotAPIClient:
         if self._gateway_clmm is None:
             raise RuntimeError("Client not initialized. Call await client.init() first.")
         return self._gateway_clmm
+
+    @property
+    def gateway_amm(self) -> GatewayAMMRouter:
+        """Access the gateway AMM router."""
+        if self._gateway_amm is None:
+            raise RuntimeError("Client not initialized. Call await client.init() first.")
+        return self._gateway_amm
 
     @property
     def market_data(self) -> MarketDataRouter:
