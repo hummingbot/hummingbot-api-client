@@ -12,7 +12,8 @@ class GatewayCLMMRouter(BaseRouter):
         self,
         connector: str,
         network: str,
-        pool_address: str
+        pool_address: str,
+        bin_count: int = 0
     ) -> Dict[str, Any]:
         """
         Get detailed information about a CLMM pool by pool address.
@@ -21,15 +22,14 @@ class GatewayCLMMRouter(BaseRouter):
             connector: CLMM connector (e.g., 'meteora', 'raydium')
             network: Network ID in 'chain-network' format (e.g., 'solana-mainnet-beta')
             pool_address: Pool contract address
+            bin_count: If > 0, include the per-tick liquidity distribution (`bins`)
+                around the active price. Meteora always returns its bins and ignores
+                this; orca, raydium, uniswap and pancakeswap compute them on request.
+                Defaults to 0, which skips the extra on-chain reads.
 
         Returns:
-            Pool information including liquidity, price, bins (for Meteora), etc.
+            Pool information including liquidity, price, and bins.
             All field names are returned in snake_case format.
-
-        Raises:
-            HTTPError (400): For Raydium, returns error if pool is a Standard AMM pool
-                instead of a CLMM pool. This endpoint only supports Concentrated
-                Liquidity (CLMM) pools.
 
         Example:
             pool_info = await client.gateway_clmm.get_pool_info(
@@ -37,12 +37,22 @@ class GatewayCLMMRouter(BaseRouter):
                 network='solana-mainnet-beta',
                 pool_address='2sf5NYcY4zUPXUSmG6f66mskb24t5F8S11pC1Nz5nQT3'
             )
+
+            # With the bin distribution around the active price
+            pool_info = await client.gateway_clmm.get_pool_info(
+                connector='orca',
+                network='solana-mainnet-beta',
+                pool_address='Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE',
+                bin_count=11
+            )
         """
         params = {
             "connector": connector,
             "network": network,
             "pool_address": pool_address
         }
+        if bin_count:
+            params["bin_count"] = bin_count
         return await self._get("/gateway/clmm/pool-info", params=params)
 
     async def get_pools(
