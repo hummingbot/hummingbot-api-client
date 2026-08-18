@@ -372,34 +372,33 @@ class GatewayCLMMRouter(BaseRouter):
         self,
         connector: str,
         network: str,
-        pool_address: str,
         wallet_address: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        Get all liquidity positions owned by a wallet for a specific pool.
+        Get ALL liquidity positions owned by a wallet on a connector.
+
+        Mirrors Gateway's /trading/clmm/positions-owned, which takes no pool
+        filter — each returned row carries its own pool_address.
 
         Args:
             connector: CLMM connector (e.g., 'meteora')
             network: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
-            pool_address: Pool contract address
             wallet_address: Wallet address (uses default if not provided)
 
         Returns:
-            List of position information for the specified pool
+            List of position information for the wallet
 
         Example:
             positions = await client.gateway_clmm.get_positions_owned(
                 connector='meteora',
-                network='solana-mainnet-beta',
-                pool_address='2sf5NYcY4zUPXUSmG6f66mskb24t5F8S11pC1Nz5nQT3'
+                network='solana-mainnet-beta'
             )
             for pos in positions:
                 print(f"Position: {pos['position_address']} - In Range: {pos['in_range']}")
         """
         request_data = {
             "connector": connector,
-            "network": network,
-            "pool_address": pool_address
+            "network": network
         }
         if wallet_address:
             request_data["wallet_address"] = wallet_address
