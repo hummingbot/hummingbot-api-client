@@ -206,18 +206,17 @@ class GatewayAMMRouter(BaseRouter):
         base_token_amount: Decimal,
         quote_token_amount: Optional[Decimal] = None,
         initial_price: Optional[Decimal] = None,
-        config_address: Optional[str] = None,
-        fee_config_index: Optional[int] = None,
-        gas_price: Optional[Decimal] = None,
-        max_gas: Optional[int] = None,
         wallet_address: Optional[str] = None,
+        extra_params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Create and seed a new AMM pool.
 
         Seed price priority: initial_price -> quote_token_amount ratio -> live market price
-        (anti-snipe). Only base_token_amount is required. Connector extras are sent only when set:
-        config_address (meteora, required), fee_config_index (raydium), gas_price/max_gas (uniswap).
+        (anti-snipe). Only base_token_amount is required. Connector-specific params ride
+        extra_params under Gateway's own names: configAddress (meteora, required there),
+        feeConfigIndex/openTime (raydium), gasPrice/maxGas/slippagePct (uniswap/EVM).
+        Unknown keys are rejected by the API.
         """
         request_data = {
             "connector": connector,
@@ -230,14 +229,8 @@ class GatewayAMMRouter(BaseRouter):
             request_data["quote_token_amount"] = str(quote_token_amount)
         if initial_price is not None:
             request_data["initial_price"] = str(initial_price)
-        if config_address is not None:
-            request_data["config_address"] = config_address
-        if fee_config_index is not None:
-            request_data["fee_config_index"] = fee_config_index
-        if gas_price is not None:
-            request_data["gas_price"] = str(gas_price)
-        if max_gas is not None:
-            request_data["max_gas"] = max_gas
         if wallet_address:
             request_data["wallet_address"] = wallet_address
+        if extra_params:
+            request_data["extra_params"] = extra_params
         return await self._post("/gateway/amm/create-pool", json=request_data)

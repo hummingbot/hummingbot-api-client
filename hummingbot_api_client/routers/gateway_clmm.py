@@ -414,14 +414,15 @@ class GatewayCLMMRouter(BaseRouter):
         quote_token: str,
         initial_price: Optional[Decimal] = None,
         wallet_address: Optional[str] = None,
-        **connector_extras: Any
+        extra_params: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Create a new (empty) CLMM pool - liquidity is added by opening positions.
 
-        connector_extras are the per-connector create params (bin_step/fee_bps for
-        meteora, amm_config_index for raydium, fee/tick_spacing for orca,
-        amm_config for pancakeswap-sol, gas_price/max_gas for EVM connectors).
+        Connector-specific params ride extra_params under Gateway's own names:
+        binStep/feeBps (meteora), ammConfigIndex (raydium), fee/tickSpacing (orca),
+        ammConfig (pancakeswap-sol), gasPrice/maxGas (EVM connectors). Unknown keys
+        are rejected by the API.
         """
         request_data = {
             "connector": connector,
@@ -433,9 +434,8 @@ class GatewayCLMMRouter(BaseRouter):
             request_data["initial_price"] = str(initial_price)
         if wallet_address:
             request_data["wallet_address"] = wallet_address
-        for key, value in connector_extras.items():
-            if value is not None:
-                request_data[key] = value
+        if extra_params:
+            request_data["extra_params"] = extra_params
 
         return await self._post("/gateway/clmm/create-pool", json=request_data)
 
