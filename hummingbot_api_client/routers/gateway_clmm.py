@@ -368,6 +368,95 @@ class GatewayCLMMRouter(BaseRouter):
 
         return await self._post("/gateway/clmm/collect-fees", json=request_data)
 
+    async def quote_position(
+        self,
+        connector: str,
+        network: str,
+        pool_address: str,
+        lower_price: Decimal,
+        upper_price: Decimal,
+        base_token_amount: Optional[Decimal] = None,
+        quote_token_amount: Optional[Decimal] = None,
+        slippage_pct: Optional[Decimal] = None
+    ) -> Dict[str, Any]:
+        """
+        Quote a candidate CLMM position before opening or adding liquidity.
+
+        Returns the base/quote split the pool would actually take for the given
+        range and deposit amounts (and which side limits it), without signing
+        or submitting anything.
+
+        Returns:
+            Dict with base_limited, base_token_amount, quote_token_amount,
+            base_token_amount_max, quote_token_amount_max.
+        """
+        request_data = {
+            "connector": connector,
+            "network": network,
+            "pool_address": pool_address,
+            "lower_price": str(lower_price),
+            "upper_price": str(upper_price),
+        }
+        if base_token_amount is not None:
+            request_data["base_token_amount"] = str(base_token_amount)
+        if quote_token_amount is not None:
+            request_data["quote_token_amount"] = str(quote_token_amount)
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
+
+        return await self._post("/gateway/clmm/quote-position", json=request_data)
+
+    async def create_pool(
+        self,
+        connector: str,
+        network: str,
+        base_token: str,
+        quote_token: str,
+        initial_price: Optional[Decimal] = None,
+        wallet_address: Optional[str] = None,
+        **connector_extras: Any
+    ) -> Dict[str, Any]:
+        """
+        Create a new (empty) CLMM pool - liquidity is added by opening positions.
+
+        connector_extras are the per-connector create params (bin_step/fee_bps for
+        meteora, amm_config_index for raydium, fee/tick_spacing for orca,
+        amm_config for pancakeswap-sol, gas_price/max_gas for EVM connectors).
+        """
+        request_data = {
+            "connector": connector,
+            "network": network,
+            "base_token": base_token,
+            "quote_token": quote_token,
+        }
+        if initial_price is not None:
+            request_data["initial_price"] = str(initial_price)
+        if wallet_address:
+            request_data["wallet_address"] = wallet_address
+        for key, value in connector_extras.items():
+            if value is not None:
+                request_data[key] = value
+
+        return await self._post("/gateway/clmm/create-pool", json=request_data)
+
+    async def get_position_info(
+        self,
+        connector: str,
+        network: str,
+        position_address: str
+    ) -> Dict[str, Any]:
+        """
+        Get a single CLMM position by its address.
+
+        Raises a 404 error when the position does not exist or is closed.
+        """
+        params = {
+            "connector": connector,
+            "network": network,
+            "position_address": position_address
+        }
+        return await self._get("/gateway/clmm/position-info", params=params)
+
     async def get_positions_owned(
         self,
         connector: str,
