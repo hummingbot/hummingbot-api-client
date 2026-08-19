@@ -1,5 +1,7 @@
-from typing import Optional
+from typing import Optional, Union
 import aiohttp
+
+QueryParams = Union[dict, list]
 
 
 class BaseRouter:
@@ -57,7 +59,7 @@ class BaseRouter:
                     )
             return await response.json()
     
-    async def _post(self, path: str, json: Optional[dict] = None, params: Optional[dict] = None) -> dict:
+    async def _post(self, path: str, json: Optional[dict] = None, params: Optional[QueryParams] = None) -> dict:
         """Perform a POST request and return JSON response."""
         url = f"{self.base_url}/{path.lstrip('/')}"
         async with self.session.post(url, json=json, params=params) as response:

@@ -109,8 +109,9 @@ class GatewayAMMRouter(BaseRouter):
             "base_token": base_token,
             "side": side,
             "amount": str(amount),
-            "slippage_pct": str(slippage_pct) if slippage_pct is not None else "1.0",
         }
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
         if wallet_address:
             request_data["wallet_address"] = wallet_address
         return await self._post("/gateway/amm/execute-swap", json=request_data)
@@ -159,8 +160,9 @@ class GatewayAMMRouter(BaseRouter):
             "pool_address": pool_address,
             "base_token_amount": str(base_token_amount),
             "quote_token_amount": str(quote_token_amount),
-            "slippage_pct": str(slippage_pct) if slippage_pct is not None else "1.0",
         }
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
         if wallet_address:
             request_data["wallet_address"] = wallet_address
         if position_address:
@@ -206,6 +208,7 @@ class GatewayAMMRouter(BaseRouter):
         base_token_amount: Decimal,
         quote_token_amount: Optional[Decimal] = None,
         initial_price: Optional[Decimal] = None,
+        slippage_pct: Optional[Decimal] = None,
         wallet_address: Optional[str] = None,
         extra_params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
@@ -213,10 +216,11 @@ class GatewayAMMRouter(BaseRouter):
         Create and seed a new AMM pool.
 
         Seed price priority: initial_price -> quote_token_amount ratio -> live market price
-        (anti-snipe). Only base_token_amount is required. Connector-specific params ride
-        extra_params under Gateway's own names: configAddress (meteora, required there),
-        feeConfigIndex/openTime (raydium), gasPrice/maxGas/slippagePct (uniswap/EVM).
-        Unknown keys are rejected by the API.
+        (anti-snipe). Only base_token_amount is required. slippage_pct bounds the seeding
+        deposit on EVM connectors; omit to use the connector's configured slippage.
+        Connector-specific params ride extra_params under Gateway's own names:
+        configAddress (meteora, required there), ammConfigIndex (raydium).
+        Unknown keys are rejected by the API with a 400.
         """
         request_data = {
             "connector": connector,
@@ -229,6 +233,8 @@ class GatewayAMMRouter(BaseRouter):
             request_data["quote_token_amount"] = str(quote_token_amount)
         if initial_price is not None:
             request_data["initial_price"] = str(initial_price)
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
         if wallet_address:
             request_data["wallet_address"] = wallet_address
         if extra_params:

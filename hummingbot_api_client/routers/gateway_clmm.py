@@ -130,7 +130,8 @@ class GatewayCLMMRouter(BaseRouter):
             upper_price: Upper price bound
             base_token_amount: Amount of base token to provide (optional)
             quote_token_amount: Amount of quote token to provide (optional)
-            slippage_pct: Slippage percentage tolerance (default: 1.0)
+            slippage_pct: Slippage percentage tolerance. Omit to use the
+                connector's configured slippage; 0 is a real value.
             wallet_address: Wallet address (uses default if not provided)
             extra_params: Additional connector-specific parameters (e.g., {"strategyType": 0} for Meteora)
 
@@ -161,9 +162,10 @@ class GatewayCLMMRouter(BaseRouter):
             "network": network,
             "pool_address": pool_address,
             "lower_price": str(lower_price),
-            "upper_price": str(upper_price),
-            "slippage_pct": str(slippage_pct) if slippage_pct else "1.0"
+            "upper_price": str(upper_price)
         }
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
         if base_token_amount is not None:
             request_data["base_token_amount"] = str(base_token_amount)
         if quote_token_amount is not None:
@@ -183,7 +185,8 @@ class GatewayCLMMRouter(BaseRouter):
         base_token_amount: Optional[Decimal] = None,
         quote_token_amount: Optional[Decimal] = None,
         slippage_pct: Optional[Decimal] = None,
-        wallet_address: Optional[str] = None
+        wallet_address: Optional[str] = None,
+        extra_params: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Add MORE liquidity to an EXISTING position, keeping its current price range.
@@ -196,8 +199,10 @@ class GatewayCLMMRouter(BaseRouter):
             position_address: Existing position NFT address
             base_token_amount: Amount of base token to add (optional)
             quote_token_amount: Amount of quote token to add (optional)
-            slippage_pct: Slippage percentage tolerance (default: 1.0)
+            slippage_pct: Slippage percentage tolerance. Omit to use the
+                connector's configured slippage; 0 is a real value.
             wallet_address: Wallet address (uses default if not provided)
+            extra_params: Additional connector-specific parameters (e.g., {"strategyType": 0} for Meteora)
 
         Returns:
             Transaction hash and resulting position amounts
@@ -214,15 +219,18 @@ class GatewayCLMMRouter(BaseRouter):
         request_data = {
             "connector": connector,
             "network": network,
-            "position_address": position_address,
-            "slippage_pct": str(slippage_pct) if slippage_pct is not None else "1.0"
+            "position_address": position_address
         }
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
         if base_token_amount is not None:
             request_data["base_token_amount"] = str(base_token_amount)
         if quote_token_amount is not None:
             request_data["quote_token_amount"] = str(quote_token_amount)
         if wallet_address:
             request_data["wallet_address"] = wallet_address
+        if extra_params:
+            request_data["extra_params"] = extra_params
 
         return await self._post("/gateway/clmm/add", json=request_data)
 
@@ -231,20 +239,25 @@ class GatewayCLMMRouter(BaseRouter):
         connector: str,
         network: str,
         position_address: str,
-        percentage: Decimal,
+        percentage_to_remove: Decimal,
+        slippage_pct: Optional[Decimal] = None,
         wallet_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Remove SOME liquidity from a position (partial withdrawal).
 
-        The position account survives even at percentage=100, which leaves it empty but open.
-        To withdraw everything AND close the position, use close_position().
+        The position account survives even at percentage_to_remove=100, which leaves
+        it empty but open. To withdraw everything AND close the position, use
+        close_position().
 
         Args:
             connector: CLMM connector (e.g., 'meteora')
             network: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
             position_address: Position NFT address
-            percentage: Percentage of liquidity to remove (0-100)
+            percentage_to_remove: Percentage of liquidity to remove (0-100)
+            slippage_pct: Slippage percentage tolerance (orca only; other
+                connectors ignore it). Omit to use the connector's configured
+                slippage.
             wallet_address: Wallet address (uses default if not provided)
 
         Returns:
@@ -255,15 +268,17 @@ class GatewayCLMMRouter(BaseRouter):
                 connector='meteora',
                 network='solana-mainnet-beta',
                 position_address='...',
-                percentage=Decimal('50')
+                percentage_to_remove=Decimal('50')
             )
         """
         request_data = {
             "connector": connector,
             "network": network,
             "position_address": position_address,
-            "percentage": str(percentage)
+            "percentage_to_remove": str(percentage_to_remove)
         }
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
         if wallet_address:
             request_data["wallet_address"] = wallet_address
 
@@ -420,9 +435,9 @@ class GatewayCLMMRouter(BaseRouter):
         Create a new (empty) CLMM pool - liquidity is added by opening positions.
 
         Connector-specific params ride extra_params under Gateway's own names:
-        binStep/feeBps (meteora), ammConfigIndex (raydium), fee/tickSpacing (orca),
-        ammConfig (pancakeswap-sol), gasPrice/maxGas (EVM connectors). Unknown keys
-        are rejected by the API.
+        binStep (meteora, orca), feeBps (meteora, uniswap, pancakeswap),
+        ammConfigIndex (raydium, pancakeswap-sol). Unknown keys are rejected
+        by the API with a 400.
         """
         request_data = {
             "connector": connector,
@@ -566,22 +581,26 @@ class GatewayCLMMRouter(BaseRouter):
             for position in results['data']:
                 print(f"Position: {position['position_address']} - {position['in_range']}")
         """
-        request_data = {
-            "limit": limit,
-            "offset": offset,
-            "refresh": refresh
-        }
+        # hapi declares these as query parameters on a POST — a JSON body is
+        # silently ignored, so the filters must ride the query string.
+        # position_addresses repeats as multiple query keys, hence the tuples.
+        params = [
+            ("limit", str(limit)),
+            ("offset", str(offset)),
+            ("refresh", "true" if refresh else "false"),
+        ]
         if network is not None:
-            request_data["network"] = network
+            params.append(("network", network))
         if connector is not None:
-            request_data["connector"] = connector
+            params.append(("connector", connector))
         if wallet_address is not None:
-            request_data["wallet_address"] = wallet_address
+            params.append(("wallet_address", wallet_address))
         if trading_pair is not None:
-            request_data["trading_pair"] = trading_pair
+            params.append(("trading_pair", trading_pair))
         if status is not None:
-            request_data["status"] = status
+            params.append(("status", status))
         if position_addresses is not None:
-            request_data["position_addresses"] = position_addresses
+            for address in position_addresses:
+                params.append(("position_addresses", address))
 
-        return await self._post("/gateway/clmm/positions/search", json=request_data)
+        return await self._post("/gateway/clmm/positions/search", params=params)

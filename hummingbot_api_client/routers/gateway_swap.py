@@ -15,7 +15,8 @@ class GatewaySwapRouter(BaseRouter):
         trading_pair: str,
         side: str,
         amount: Decimal,
-        slippage_pct: Optional[Decimal] = None
+        slippage_pct: Optional[Decimal] = None,
+        extra_params: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Get a price quote for a swap via router (Jupiter, 0x).
@@ -26,7 +27,11 @@ class GatewaySwapRouter(BaseRouter):
             trading_pair: Trading pair in format 'BASE-QUOTE' (e.g., 'SOL-USDC')
             side: Trade side - 'BUY' or 'SELL'
             amount: Amount to trade
-            slippage_pct: Optional slippage percentage (default: 1.0)
+            slippage_pct: Optional slippage percentage. Omit to use the
+                connector's configured slippage; 0 is a real value.
+            extra_params: Optional connector-specific params under Gateway's own
+                key names. Supported: approximateIfNoExactOut (bool) for the
+                jupiter/dflow/okx/titan routers.
 
         Returns:
             Quote with price, expected output amount, and gas estimate
@@ -37,8 +42,7 @@ class GatewaySwapRouter(BaseRouter):
                 network='solana-mainnet-beta',
                 trading_pair='SOL-USDC',
                 side='BUY',
-                amount=Decimal('1'),
-                slippage_pct=Decimal('1.0')
+                amount=Decimal('1')
             )
         """
         request_data = {
@@ -46,9 +50,12 @@ class GatewaySwapRouter(BaseRouter):
             "network": network,
             "trading_pair": trading_pair,
             "side": side,
-            "amount": str(amount),
-            "slippage_pct": str(slippage_pct) if slippage_pct else "1.0"
+            "amount": str(amount)
         }
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
+        if extra_params is not None:
+            request_data["extra_params"] = extra_params
         return await self._post("/gateway/swap/quote", json=request_data)
 
     async def execute_swap(
@@ -59,7 +66,8 @@ class GatewaySwapRouter(BaseRouter):
         side: str,
         amount: Decimal,
         slippage_pct: Optional[Decimal] = None,
-        wallet_address: Optional[str] = None
+        wallet_address: Optional[str] = None,
+        extra_params: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Execute a swap transaction via router (Jupiter, 0x).
@@ -70,8 +78,12 @@ class GatewaySwapRouter(BaseRouter):
             trading_pair: Trading pair in format 'BASE-QUOTE' (e.g., 'SOL-USDC')
             side: Trade side - 'BUY' or 'SELL'
             amount: Amount to trade
-            slippage_pct: Optional slippage percentage (default: 1.0)
+            slippage_pct: Optional slippage percentage. Omit to use the
+                connector's configured slippage; 0 is a real value.
             wallet_address: Optional wallet address (uses default if not provided)
+            extra_params: Optional connector-specific params under Gateway's own
+                key names. Supported: approximateIfNoExactOut (bool) for the
+                jupiter/dflow/okx/titan routers.
 
         Returns:
             Transaction hash and swap details
@@ -82,8 +94,7 @@ class GatewaySwapRouter(BaseRouter):
                 network='solana-mainnet-beta',
                 trading_pair='SOL-USDC',
                 side='BUY',
-                amount=Decimal('1'),
-                slippage_pct=Decimal('1.0')
+                amount=Decimal('1')
             )
             print(f"Transaction hash: {result['transaction_hash']}")
         """
@@ -92,11 +103,14 @@ class GatewaySwapRouter(BaseRouter):
             "network": network,
             "trading_pair": trading_pair,
             "side": side,
-            "amount": str(amount),
-            "slippage_pct": str(slippage_pct) if slippage_pct else "1.0"
+            "amount": str(amount)
         }
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
         if wallet_address:
             request_data["wallet_address"] = wallet_address
+        if extra_params is not None:
+            request_data["extra_params"] = extra_params
 
         return await self._post("/gateway/swap/execute", json=request_data)
 
@@ -160,25 +174,27 @@ class GatewaySwapRouter(BaseRouter):
             for swap in results['data']:
                 print(f"Swap: {swap['trading_pair']} - {swap['status']}")
         """
-        request_data = {}
+        # hapi declares these as query parameters on a POST — a JSON body is
+        # silently ignored, so the filters must ride the query string.
+        params = {}
         if network is not None:
-            request_data["network"] = network
+            params["network"] = network
         if connector is not None:
-            request_data["connector"] = connector
+            params["connector"] = connector
         if wallet_address is not None:
-            request_data["wallet_address"] = wallet_address
+            params["wallet_address"] = wallet_address
         if trading_pair is not None:
-            request_data["trading_pair"] = trading_pair
+            params["trading_pair"] = trading_pair
         if status is not None:
-            request_data["status"] = status
+            params["status"] = status
         if start_time is not None:
-            request_data["start_time"] = start_time
+            params["start_time"] = str(start_time)
         if end_time is not None:
-            request_data["end_time"] = end_time
-        request_data["limit"] = limit
-        request_data["offset"] = offset
+            params["end_time"] = str(end_time)
+        params["limit"] = str(limit)
+        params["offset"] = str(offset)
 
-        return await self._post("/gateway/swaps/search", json=request_data)
+        return await self._post("/gateway/swaps/search", params=params)
 
     async def get_swaps_summary(
         self,
@@ -204,8 +220,8 @@ class GatewaySwapRouter(BaseRouter):
                 network='solana-mainnet-beta',
                 wallet_address='ABC...'
             )
-            print(f"Total volume: {summary['total_volume']}")
-            print(f"Success rate: {summary['success_rate']}")
+            for token, volume in summary['volume_by_quote_token'].items():
+                print(f"Volume ({token}): {volume}")
         """
         params = {}
         if network is not None:
