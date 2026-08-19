@@ -58,6 +58,7 @@ class GatewayCLMMRouter(BaseRouter):
     async def get_pools(
         self,
         connector: str,
+        network: str = "mainnet-beta",
         page: int = 0,
         limit: int = 50,
         search_term: Optional[str] = None,
@@ -72,6 +73,7 @@ class GatewayCLMMRouter(BaseRouter):
 
         Args:
             connector: CLMM connector (e.g., 'meteora')
+            network: Solana network name, bare (meteora/orca are Solana-only)
             page: Page number (default: 0)
             limit: Results per page (default: 50, max: 100)
             search_term: Search term to filter pools (optional)
@@ -93,6 +95,7 @@ class GatewayCLMMRouter(BaseRouter):
         """
         params = {
             "connector": connector,
+            "network": network,
             "page": page,
             "limit": min(limit, 100),  # Cap at 100
             "include_unknown": str(include_unknown).lower()  # Convert boolean to lowercase string
