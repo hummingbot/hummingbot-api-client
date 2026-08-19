@@ -67,55 +67,6 @@ class GatewayAMMRouter(BaseRouter):
             request_data["wallet_address"] = wallet_address
         return await self._post("/gateway/amm/positions-owned", json=request_data)
 
-    async def get_swap_quote(
-        self,
-        connector: str,
-        network: str,
-        pool_address: str,
-        base_token: str,
-        side: str,
-        amount: Decimal,
-        slippage_pct: Optional[Decimal] = None,
-    ) -> Dict[str, Any]:
-        """Quote a swap against a specific AMM pool (pool-scoped, not router)."""
-        request_data = {
-            "connector": connector,
-            "network": network,
-            "pool_address": pool_address,
-            "base_token": base_token,
-            "side": side,
-            "amount": str(amount),
-        }
-        if slippage_pct is not None:
-            request_data["slippage_pct"] = str(slippage_pct)
-        return await self._post("/gateway/amm/quote-swap", json=request_data)
-
-    async def execute_swap(
-        self,
-        connector: str,
-        network: str,
-        pool_address: str,
-        base_token: str,
-        side: str,
-        amount: Decimal,
-        slippage_pct: Optional[Decimal] = None,
-        wallet_address: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Execute a swap against a specific AMM pool."""
-        request_data = {
-            "connector": connector,
-            "network": network,
-            "pool_address": pool_address,
-            "base_token": base_token,
-            "side": side,
-            "amount": str(amount),
-        }
-        if slippage_pct is not None:
-            request_data["slippage_pct"] = str(slippage_pct)
-        if wallet_address:
-            request_data["wallet_address"] = wallet_address
-        return await self._post("/gateway/amm/execute-swap", json=request_data)
-
     async def get_liquidity_quote(
         self,
         connector: str,
