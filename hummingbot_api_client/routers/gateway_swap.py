@@ -114,6 +114,59 @@ class GatewaySwapRouter(BaseRouter):
 
         return await self._post("/gateway/swap/execute", json=request_data)
 
+    async def execute_quote(
+        self,
+        connector: str,
+        network: str,
+        quote_id: str,
+        trading_pair: str,
+        side: str,
+        amount: Decimal,
+        wallet_address: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Execute a quote returned by get_swap_quote, by its quote_id.
+
+        The two-step flow: quote, decide, then commit to THAT quote. execute_swap prices
+        again at execution and discards the price the caller saw, which is the whole
+        value of a held quote on dflow, titan and 0x. Router connectors only — a
+        pool-scoped connector has no cached quote and the API rejects it with a 400
+        rather than quietly re-pricing.
+
+        Args:
+            connector: Router connector the quote came from (e.g. 'jupiter', '0x')
+            network: Network ID in format 'chain-network' (e.g. 'solana-mainnet-beta')
+            quote_id: The quote_id field of a prior get_swap_quote response
+            trading_pair: The pair the quote was for, in 'BASE-QUOTE' form
+            side: The side the quote was for - 'BUY' or 'SELL'
+            amount: The base-token amount the quote was for
+            wallet_address: Optional wallet address (uses default if not provided)
+
+        Returns:
+            Transaction hash and what the swap actually moved
+
+        Example:
+            quote = await client.gateway_swap.get_swap_quote(
+                connector='jupiter', network='solana-mainnet-beta',
+                trading_pair='SOL-USDC', side='SELL', amount=Decimal('0.01'))
+            result = await client.gateway_swap.execute_quote(
+                connector='jupiter', network='solana-mainnet-beta',
+                quote_id=quote['quote_id'], trading_pair='SOL-USDC',
+                side='SELL', amount=Decimal('0.01'))
+        """
+        request_data = {
+            "connector": connector,
+            "network": network,
+            "quote_id": quote_id,
+            "trading_pair": trading_pair,
+            "side": side,
+            "amount": str(amount)
+        }
+        if wallet_address:
+            request_data["wallet_address"] = wallet_address
+
+        return await self._post("/gateway/swap/execute-quote", json=request_data)
+
     async def get_swap_status(
         self,
         transaction_hash: str
