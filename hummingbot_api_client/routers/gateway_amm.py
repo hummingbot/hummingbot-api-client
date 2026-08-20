@@ -191,3 +191,75 @@ class GatewayAMMRouter(BaseRouter):
         if extra_params:
             request_data["extra_params"] = extra_params
         return await self._post("/gateway/amm/create-pool", json=request_data)
+
+    async def search_events(
+        self,
+        connector: Optional[str] = None,
+        network: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        pool_address: Optional[str] = None,
+        event_type: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> Dict[str, Any]:
+        """
+        Search recorded AMM liquidity writes, newest first.
+
+        This is the AMM history — ADD_LIQUIDITY, REMOVE_LIQUIDITY and CREATE_POOL with
+        their on-chain amounts and gas. Current holdings are not here; read those live
+        from get_position_info(), which is the only authority on them.
+
+        Args:
+            connector: Filter by connector (e.g. 'meteora', 'raydium')
+            network: Filter by network (e.g. 'solana-mainnet-beta')
+            wallet_address: Filter by wallet address
+            pool_address: Filter by pool address
+            event_type: ADD_LIQUIDITY, REMOVE_LIQUIDITY or CREATE_POOL
+            status: Filter by status
+            limit: Max results (default 50, capped at 1000 by the API)
+            offset: Pagination offset
+        """
+        return await self._post("/gateway/amm/events/search", params=self._search_params(
+            connector=connector, network=network, wallet_address=wallet_address,
+            pool_address=pool_address, event_type=event_type, status=status,
+            limit=limit, offset=offset,
+        ))
+
+    async def search_positions(
+        self,
+        connector: Optional[str] = None,
+        network: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        pool_address: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> Dict[str, Any]:
+        """
+        Search tracked AMM positions (Meteora DAMM v2 NFTs), newest first.
+
+        Fungible-LP AMMs never appear here — they have no position identity. Their
+        holdings come from get_position_info() and their history from search_events().
+
+        Args:
+            connector: Filter by connector (e.g. 'meteora')
+            network: Filter by network (e.g. 'solana-mainnet-beta')
+            wallet_address: Filter by wallet address
+            pool_address: Filter by pool address
+            status: Filter by status (OPEN, CLOSED)
+            limit: Max results (default 50, capped at 1000 by the API)
+            offset: Pagination offset
+        """
+        return await self._post("/gateway/amm/positions/search", params=self._search_params(
+            connector=connector, network=network, wallet_address=wallet_address,
+            pool_address=pool_address, status=status, limit=limit, offset=offset,
+        ))
+
+    @staticmethod
+    def _search_params(limit: int, offset: int, **filters: Optional[str]) -> Dict[str, Any]:
+        """hapi declares the search filters as query parameters on a POST — a JSON body
+        is silently ignored, so they must ride the query string."""
+        params: Dict[str, Any] = {"limit": limit, "offset": offset}
+        params.update({key: value for key, value in filters.items() if value is not None})
+        return params
