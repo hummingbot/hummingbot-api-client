@@ -34,7 +34,15 @@ class GatewaySwapRouter(BaseRouter):
                 jupiter/dflow/okx/titan routers.
 
         Returns:
-            Quote with price, expected output amount, and gas estimate
+            Quote with price, expected output amount, and gas estimate.
+            `approximation` is True when amount_out is an ESTIMATE rather than
+            the exact-out amount asked for: a BUY is an ExactOut order, and a
+            thin token with no ExactOut route is quoted by pricing the sell leg
+            and quoting that input forward, which costs roughly 2.5%. The order
+            is silently resized rather than overcharged, so check this whenever
+            the quantity is what matters. Pass
+            extra_params={'approximateIfNoExactOut': False} to require an exact
+            route instead.
 
         Example:
             quote = await client.gateway_swap.get_swap_quote(
