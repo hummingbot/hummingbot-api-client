@@ -142,7 +142,19 @@ class ExecutorsRouter(BaseRouter):
             executor_id: The executor ID to retrieve
 
         Returns:
-            Executor details
+            Executor details. Two amounts that are easy to conflate:
+            `filled_amount_quote` is the capital deployed, `volume_traded_quote` is
+            the volume generated. They are the same number for an executor that
+            places orders — the amount it filled IS its volume — and deliberately
+            different for an LP executor, whose deposit trades nothing. An LP
+            position's volume is derived from the fees it earned and reads 0 until
+            it has earned some.
+
+            For a Gateway swap, `custom_info` carries `transaction_hash` (the
+            on-chain signature; `order_id` is internal and appears nowhere on
+            chain), `swap_provider`, `wallet_address`, and the LIVE `slippage_pct` —
+            above the configured start means earlier attempts failed on slippage and
+            this one paid to get through.
 
         Example:
             executor = await client.executors.get_executor("exec_123")
