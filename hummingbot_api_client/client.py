@@ -15,7 +15,6 @@ from .routers import (
     GatewayCLMMRouter,
     MarketDataRouter,
     PortfolioRouter,
-    RateOracleRouter,
     ScriptsRouter,
     TradingRouter
 )
@@ -49,7 +48,6 @@ class HummingbotAPIClient:
         self._gateway_amm: Optional[GatewayAMMRouter] = None
         self._market_data: Optional[MarketDataRouter] = None
         self._portfolio: Optional[PortfolioRouter] = None
-        self._rate_oracle: Optional[RateOracleRouter] = None
         self._scripts: Optional[ScriptsRouter] = None
         self._trading: Optional[TradingRouter] = None
         self._ws: Optional[WebSocketRouter] = None
@@ -77,7 +75,6 @@ class HummingbotAPIClient:
             self._gateway_amm = GatewayAMMRouter(self._session, self.base_url)
             self._market_data = MarketDataRouter(self._session, self.base_url)
             self._portfolio = PortfolioRouter(self._session, self.base_url)
-            self._rate_oracle = RateOracleRouter(self._session, self.base_url)
             self._scripts = ScriptsRouter(self._session, self.base_url)
             self._trading = TradingRouter(self._session, self.base_url)
             self._ws = WebSocketRouter(self._session, self.base_url, self._username, self._password)
@@ -101,7 +98,6 @@ class HummingbotAPIClient:
             self._gateway_amm = None
             self._market_data = None
             self._portfolio = None
-            self._rate_oracle = None
             self._scripts = None
             self._trading = None
             self._ws = None
@@ -204,13 +200,6 @@ class HummingbotAPIClient:
             raise RuntimeError("Client not initialized. Call await client.init() first.")
         return self._portfolio
     
-    @property
-    def rate_oracle(self) -> RateOracleRouter:
-        """Access the rate oracle router."""
-        if self._rate_oracle is None:
-            raise RuntimeError("Client not initialized. Call await client.init() first.")
-        return self._rate_oracle
-
     @property
     def scripts(self) -> ScriptsRouter:
         """Access the scripts router."""

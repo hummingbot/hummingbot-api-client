@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     from .routers.gateway_clmm import GatewayCLMMRouter
     from .routers.market_data import MarketDataRouter
     from .routers.portfolio import PortfolioRouter
-    from .routers.rate_oracle import RateOracleRouter
     from .routers.scripts import ScriptsRouter
     from .routers.trading import TradingRouter
 
@@ -84,7 +83,6 @@ class SyncHummingbotAPIClient:
             self.gateway_clmm: GatewayCLMMRouter
             self.market_data: MarketDataRouter
             self.portfolio: PortfolioRouter
-            self.rate_oracle: RateOracleRouter
             self.scripts: ScriptsRouter
             self.trading: TradingRouter
 
@@ -162,8 +160,8 @@ class SyncHummingbotAPIClient:
         router_attrs = [
             'accounts', 'archived_bots', 'backtesting', 'bot_orchestration',
             'connectors', 'controllers', 'docker', 'executors', 'gateway',
-            'gateway_swap', 'gateway_clmm', 'market_data', 'portfolio',
-            'rate_oracle', 'scripts', 'trading'
+            'gateway_swap', 'gateway_clmm', 'gateway_amm', 'market_data',
+            'portfolio', 'scripts', 'trading'
         ]
 
         for router_name in router_attrs:

@@ -13,7 +13,6 @@ from .gateway_clmm import GatewayCLMMRouter
 from .gateway_amm import GatewayAMMRouter
 from .market_data import MarketDataRouter
 from .portfolio import PortfolioRouter
-from .rate_oracle import RateOracleRouter
 from .scripts import ScriptsRouter
 from .trading import TradingRouter
 
@@ -33,7 +32,6 @@ __all__ = [
     "GatewayAMMRouter",
     "MarketDataRouter",
     "PortfolioRouter",
-    "RateOracleRouter",
     "ScriptsRouter",
     "TradingRouter"
 ]

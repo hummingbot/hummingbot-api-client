@@ -12,7 +12,8 @@ class GatewayCLMMRouter(BaseRouter):
         self,
         connector: str,
         network: str,
-        pool_address: str
+        pool_address: str,
+        bin_count: int = 0
     ) -> Dict[str, Any]:
         """
         Get detailed information about a CLMM pool by pool address.
@@ -21,15 +22,14 @@ class GatewayCLMMRouter(BaseRouter):
             connector: CLMM connector (e.g., 'meteora', 'raydium')
             network: Network ID in 'chain-network' format (e.g., 'solana-mainnet-beta')
             pool_address: Pool contract address
+            bin_count: If > 0, include the per-tick liquidity distribution (`bins`)
+                around the active price. Meteora always returns its bins and ignores
+                this; orca, raydium, uniswap and pancakeswap compute them on request.
+                Defaults to 0, which skips the extra on-chain reads.
 
         Returns:
-            Pool information including liquidity, price, bins (for Meteora), etc.
+            Pool information including liquidity, price, and bins.
             All field names are returned in snake_case format.
-
-        Raises:
-            HTTPError (400): For Raydium, returns error if pool is a Standard AMM pool
-                instead of a CLMM pool. This endpoint only supports Concentrated
-                Liquidity (CLMM) pools.
 
         Example:
             pool_info = await client.gateway_clmm.get_pool_info(
@@ -37,17 +37,28 @@ class GatewayCLMMRouter(BaseRouter):
                 network='solana-mainnet-beta',
                 pool_address='2sf5NYcY4zUPXUSmG6f66mskb24t5F8S11pC1Nz5nQT3'
             )
+
+            # With the bin distribution around the active price
+            pool_info = await client.gateway_clmm.get_pool_info(
+                connector='orca',
+                network='solana-mainnet-beta',
+                pool_address='Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE',
+                bin_count=11
+            )
         """
         params = {
             "connector": connector,
             "network": network,
             "pool_address": pool_address
         }
+        if bin_count:
+            params["bin_count"] = bin_count
         return await self._get("/gateway/clmm/pool-info", params=params)
 
     async def get_pools(
         self,
         connector: str,
+        network: str = "mainnet-beta",
         page: int = 0,
         limit: int = 50,
         search_term: Optional[str] = None,
@@ -62,6 +73,7 @@ class GatewayCLMMRouter(BaseRouter):
 
         Args:
             connector: CLMM connector (e.g., 'meteora')
+            network: Solana network name, bare (meteora/orca are Solana-only)
             page: Page number (default: 0)
             limit: Results per page (default: 50, max: 100)
             search_term: Search term to filter pools (optional)
@@ -83,6 +95,7 @@ class GatewayCLMMRouter(BaseRouter):
         """
         params = {
             "connector": connector,
+            "network": network,
             "page": page,
             "limit": min(limit, 100),  # Cap at 100
             "include_unknown": str(include_unknown).lower()  # Convert boolean to lowercase string
@@ -120,7 +133,8 @@ class GatewayCLMMRouter(BaseRouter):
             upper_price: Upper price bound
             base_token_amount: Amount of base token to provide (optional)
             quote_token_amount: Amount of quote token to provide (optional)
-            slippage_pct: Slippage percentage tolerance (default: 1.0)
+            slippage_pct: Slippage percentage tolerance. Omit to use the
+                connector's configured slippage; 0 is a real value.
             wallet_address: Wallet address (uses default if not provided)
             extra_params: Additional connector-specific parameters (e.g., {"strategyType": 0} for Meteora)
 
@@ -151,9 +165,10 @@ class GatewayCLMMRouter(BaseRouter):
             "network": network,
             "pool_address": pool_address,
             "lower_price": str(lower_price),
-            "upper_price": str(upper_price),
-            "slippage_pct": str(slippage_pct) if slippage_pct else "1.0"
+            "upper_price": str(upper_price)
         }
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
         if base_token_amount is not None:
             request_data["base_token_amount"] = str(base_token_amount)
         if quote_token_amount is not None:
@@ -165,11 +180,119 @@ class GatewayCLMMRouter(BaseRouter):
 
         return await self._post("/gateway/clmm/open", json=request_data)
 
+    async def add_liquidity(
+        self,
+        connector: str,
+        network: str,
+        position_address: str,
+        base_token_amount: Optional[Decimal] = None,
+        quote_token_amount: Optional[Decimal] = None,
+        slippage_pct: Optional[Decimal] = None,
+        wallet_address: Optional[str] = None,
+        extra_params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Add MORE liquidity to an EXISTING position, keeping its current price range.
+
+        To open a new position instead, use open_position().
+
+        Args:
+            connector: CLMM connector (e.g., 'meteora')
+            network: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            position_address: Existing position NFT address
+            base_token_amount: Amount of base token to add (optional)
+            quote_token_amount: Amount of quote token to add (optional)
+            slippage_pct: Slippage percentage tolerance. Omit to use the
+                connector's configured slippage; 0 is a real value.
+            wallet_address: Wallet address (uses default if not provided)
+            extra_params: Additional connector-specific parameters (e.g., {"strategyType": 0} for Meteora)
+
+        Returns:
+            Transaction hash and resulting position amounts
+
+        Example:
+            result = await client.gateway_clmm.add_liquidity(
+                connector='meteora',
+                network='solana-mainnet-beta',
+                position_address='...',
+                base_token_amount=Decimal('0.5'),
+                quote_token_amount=Decimal('50')
+            )
+        """
+        request_data = {
+            "connector": connector,
+            "network": network,
+            "position_address": position_address
+        }
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
+        if base_token_amount is not None:
+            request_data["base_token_amount"] = str(base_token_amount)
+        if quote_token_amount is not None:
+            request_data["quote_token_amount"] = str(quote_token_amount)
+        if wallet_address:
+            request_data["wallet_address"] = wallet_address
+        if extra_params:
+            request_data["extra_params"] = extra_params
+
+        return await self._post("/gateway/clmm/add", json=request_data)
+
+    async def remove_liquidity(
+        self,
+        connector: str,
+        network: str,
+        position_address: str,
+        percentage_to_remove: Decimal,
+        slippage_pct: Optional[Decimal] = None,
+        wallet_address: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Remove SOME liquidity from a position (partial withdrawal).
+
+        The position account survives even at percentage_to_remove=100, which leaves
+        it empty but open. To withdraw everything AND close the position, use
+        close_position().
+
+        Args:
+            connector: CLMM connector (e.g., 'meteora')
+            network: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
+            position_address: Position NFT address
+            percentage_to_remove: Percentage of liquidity to remove (0-100)
+            slippage_pct: Slippage percentage tolerance (orca only; other
+                connectors ignore it). Omit to use the connector's configured
+                slippage.
+            wallet_address: Wallet address (uses default if not provided)
+
+        Returns:
+            Transaction hash and removed token amounts
+
+        Example:
+            result = await client.gateway_clmm.remove_liquidity(
+                connector='meteora',
+                network='solana-mainnet-beta',
+                position_address='...',
+                percentage_to_remove=Decimal('50')
+            )
+        """
+        request_data = {
+            "connector": connector,
+            "network": network,
+            "position_address": position_address,
+            "percentage_to_remove": str(percentage_to_remove)
+        }
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
+        if wallet_address:
+            request_data["wallet_address"] = wallet_address
+
+        return await self._post("/gateway/clmm/remove", json=request_data)
+
     async def close_position(
         self,
         connector: str,
         network: str,
         position_address: str,
+        pool_address: Optional[str] = None,
         wallet_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """
@@ -179,6 +302,10 @@ class GatewayCLMMRouter(BaseRouter):
             connector: CLMM connector (e.g., 'meteora')
             network: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
             position_address: Position NFT address
+            pool_address: Pool the position belongs to. Only needed for positions the API never
+                recorded - notably positions opened by an lp_executor, which the bot opens straight
+                against Gateway. Without it those closes fail with 400. GET
+                /executors/positions/orphaned reports the pool for each orphan.
             wallet_address: Wallet address (uses default if not provided)
 
         Returns:
@@ -196,12 +323,22 @@ class GatewayCLMMRouter(BaseRouter):
                 position_address='...'
             )
             print(f"Collected fees: {result['base_fee_collected']} base, {result['quote_fee_collected']} quote")
+
+            # Closing an orphaned lp_executor position, whose pool the API never recorded
+            result = await client.gateway_clmm.close_position(
+                connector='orca',
+                network='solana-mainnet-beta',
+                position_address='H4vD69DsraHjHyKvRwRPHVGe2aJkvAUaNK5tMif2CiNw',
+                pool_address='Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE'
+            )
         """
         request_data = {
             "connector": connector,
             "network": network,
             "position_address": position_address
         }
+        if pool_address:
+            request_data["pool_address"] = pool_address
         if wallet_address:
             request_data["wallet_address"] = wallet_address
 
@@ -212,6 +349,7 @@ class GatewayCLMMRouter(BaseRouter):
         connector: str,
         network: str,
         position_address: str,
+        pool_address: Optional[str] = None,
         wallet_address: Optional[str] = None
     ) -> Dict[str, Any]:
         """
@@ -221,6 +359,8 @@ class GatewayCLMMRouter(BaseRouter):
             connector: CLMM connector (e.g., 'meteora')
             network: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
             position_address: Position NFT address
+            pool_address: Pool the position belongs to. Only needed for positions the API never
+                recorded (see close_position); without it those calls fail with 400.
             wallet_address: Wallet address (uses default if not provided)
 
         Returns:
@@ -239,43 +379,133 @@ class GatewayCLMMRouter(BaseRouter):
             "network": network,
             "position_address": position_address
         }
+        if pool_address:
+            request_data["pool_address"] = pool_address
         if wallet_address:
             request_data["wallet_address"] = wallet_address
 
         return await self._post("/gateway/clmm/collect-fees", json=request_data)
 
-    async def get_positions_owned(
+    async def quote_position(
         self,
         connector: str,
         network: str,
         pool_address: str,
+        lower_price: Decimal,
+        upper_price: Decimal,
+        base_token_amount: Optional[Decimal] = None,
+        quote_token_amount: Optional[Decimal] = None,
+        slippage_pct: Optional[Decimal] = None
+    ) -> Dict[str, Any]:
+        """
+        Quote a candidate CLMM position before opening or adding liquidity.
+
+        Returns the base/quote split the pool would actually take for the given
+        range and deposit amounts (and which side limits it), without signing
+        or submitting anything.
+
+        Returns:
+            Dict with base_limited, base_token_amount, quote_token_amount,
+            base_token_amount_max, quote_token_amount_max.
+        """
+        request_data = {
+            "connector": connector,
+            "network": network,
+            "pool_address": pool_address,
+            "lower_price": str(lower_price),
+            "upper_price": str(upper_price),
+        }
+        if base_token_amount is not None:
+            request_data["base_token_amount"] = str(base_token_amount)
+        if quote_token_amount is not None:
+            request_data["quote_token_amount"] = str(quote_token_amount)
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
+
+        return await self._post("/gateway/clmm/quote-position", json=request_data)
+
+    async def create_pool(
+        self,
+        connector: str,
+        network: str,
+        base_token: str,
+        quote_token: str,
+        initial_price: Optional[Decimal] = None,
+        wallet_address: Optional[str] = None,
+        extra_params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Create a new (empty) CLMM pool - liquidity is added by opening positions.
+
+        Connector-specific params ride extra_params under Gateway's own names:
+        binStep (meteora, orca), feeBps (meteora, uniswap, pancakeswap),
+        ammConfigIndex (raydium, pancakeswap-sol). Unknown keys are rejected
+        by the API with a 400.
+        """
+        request_data = {
+            "connector": connector,
+            "network": network,
+            "base_token": base_token,
+            "quote_token": quote_token,
+        }
+        if initial_price is not None:
+            request_data["initial_price"] = str(initial_price)
+        if wallet_address:
+            request_data["wallet_address"] = wallet_address
+        if extra_params:
+            request_data["extra_params"] = extra_params
+
+        return await self._post("/gateway/clmm/create-pool", json=request_data)
+
+    async def get_position_info(
+        self,
+        connector: str,
+        network: str,
+        position_address: str
+    ) -> Dict[str, Any]:
+        """
+        Get a single CLMM position by its address.
+
+        Raises a 404 error when the position does not exist or is closed.
+        """
+        params = {
+            "connector": connector,
+            "network": network,
+            "position_address": position_address
+        }
+        return await self._get("/gateway/clmm/position-info", params=params)
+
+    async def get_positions_owned(
+        self,
+        connector: str,
+        network: str,
         wallet_address: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        Get all liquidity positions owned by a wallet for a specific pool.
+        Get ALL liquidity positions owned by a wallet on a connector.
+
+        Mirrors Gateway's /trading/clmm/positions-owned, which takes no pool
+        filter — each returned row carries its own pool_address.
 
         Args:
             connector: CLMM connector (e.g., 'meteora')
             network: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
-            pool_address: Pool contract address
             wallet_address: Wallet address (uses default if not provided)
 
         Returns:
-            List of position information for the specified pool
+            List of position information for the wallet
 
         Example:
             positions = await client.gateway_clmm.get_positions_owned(
                 connector='meteora',
-                network='solana-mainnet-beta',
-                pool_address='2sf5NYcY4zUPXUSmG6f66mskb24t5F8S11pC1Nz5nQT3'
+                network='solana-mainnet-beta'
             )
             for pos in positions:
                 print(f"Position: {pos['position_address']} - In Range: {pos['in_range']}")
         """
         request_data = {
             "connector": connector,
-            "network": network,
-            "pool_address": pool_address
+            "network": network
         }
         if wallet_address:
             request_data["wallet_address"] = wallet_address
@@ -354,22 +584,26 @@ class GatewayCLMMRouter(BaseRouter):
             for position in results['data']:
                 print(f"Position: {position['position_address']} - {position['in_range']}")
         """
-        request_data = {
-            "limit": limit,
-            "offset": offset,
-            "refresh": refresh
-        }
+        # hapi declares these as query parameters on a POST — a JSON body is
+        # silently ignored, so the filters must ride the query string.
+        # position_addresses repeats as multiple query keys, hence the tuples.
+        params = [
+            ("limit", str(limit)),
+            ("offset", str(offset)),
+            ("refresh", "true" if refresh else "false"),
+        ]
         if network is not None:
-            request_data["network"] = network
+            params.append(("network", network))
         if connector is not None:
-            request_data["connector"] = connector
+            params.append(("connector", connector))
         if wallet_address is not None:
-            request_data["wallet_address"] = wallet_address
+            params.append(("wallet_address", wallet_address))
         if trading_pair is not None:
-            request_data["trading_pair"] = trading_pair
+            params.append(("trading_pair", trading_pair))
         if status is not None:
-            request_data["status"] = status
+            params.append(("status", status))
         if position_addresses is not None:
-            request_data["position_addresses"] = position_addresses
+            for address in position_addresses:
+                params.append(("position_addresses", address))
 
-        return await self._post("/gateway/clmm/positions/search", json=request_data)
+        return await self._post("/gateway/clmm/positions/search", params=params)

@@ -12,7 +12,7 @@ class DockerRouter(BaseRouter):
     
     async def get_available_images(self, image_name: Optional[str]) -> Dict[str, Any]:
         """Get available Docker images matching the specified name."""
-        return await self._get(f"/docker/available-images", params={"image_name": image_name})
+        return await self._get("/docker/available-images/", params={"image_name": image_name})
     
     async def get_active_containers(self, name_filter: Optional[str] = None) -> Dict[str, Any]:
         """Get all currently active (running) Docker containers."""
@@ -29,27 +29,39 @@ class DockerRouter(BaseRouter):
         return await self._post("/docker/clean-exited-containers")
     
     # Container Management
-    async def get_container_status(self, container_name: str) -> Dict[str, Any]:
-        """Get detailed status information for a specific container."""
-        return await self._get(f"/docker/container/{container_name}/status")
-    
+    #
+    # There is no per-container status route. Read a container's state from
+    # get_active_containers() / get_exited_containers(), both of which take a
+    # name_filter.
     async def start_container(self, container_name: str) -> Dict[str, Any]:
         """Start a stopped container."""
-        return await self._post(f"/docker/container/{container_name}/start")
-    
+        return await self._post(f"/docker/start-container/{container_name}")
+
     async def stop_container(self, container_name: str) -> Dict[str, Any]:
         """Stop a running container."""
-        return await self._post(f"/docker/container/{container_name}/stop")
-    
-    async def remove_container(self, container_name: str, force: bool = False) -> Dict[str, Any]:
-        """Remove a container."""
-        params = {"force": force} if force else None
-        return await self._delete(f"/docker/container/{container_name}", params=params)
+        return await self._post(f"/docker/stop-container/{container_name}")
+
+    async def remove_container(
+        self,
+        container_name: str,
+        archive_locally: bool = True,
+        s3_bucket: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Remove a Hummingbot container, archiving its bot data first.
+
+        The route only accepts containers named `hummingbot-*`: removal is bound up
+        with archiving the instance's data, which only those have.
+        """
+        params: Dict[str, Any] = {"archive_locally": archive_locally}
+        if s3_bucket:
+            params["s3_bucket"] = s3_bucket
+        return await self._post(f"/docker/remove-container/{container_name}", params=params)
 
     # Image Management
     async def pull_image(self, image_name: str, tag: str = "latest") -> Dict[str, Any]:
         """Pull a Docker image from registry."""
-        return await self._post("/docker/pull-image/", json={"name": image_name, "tag": tag})
+        # The route takes one `image_name` carrying the tag, not a name/tag pair.
+        return await self._post("/docker/pull-image/", json={"image_name": f"{image_name}:{tag}"})
     
     async def get_pull_status(self) -> Dict[str, Any]:
         """Get the status of image pull operations."""

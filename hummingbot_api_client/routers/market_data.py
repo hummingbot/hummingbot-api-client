@@ -204,8 +204,8 @@ class MarketDataRouter(BaseRouter):
         Rates are resolved via direct, reverse or bridged paths, so a pair no exchange
         lists directly still prices as long as the pool bridges it.
 
-        Note this is the market-data pool, not the rate oracle: for the oracle's own
-        rates use `client.rate_oracle.get_rates`.
+        This is the market-data pool. The API exposes no rate-oracle routes, so this is
+        the only cross-rate source the client has.
 
         Args:
             trading_pairs: Single trading pair or list of trading pairs (e.g., "BTC-USDT"

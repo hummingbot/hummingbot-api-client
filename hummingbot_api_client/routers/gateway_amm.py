@@ -67,54 +67,6 @@ class GatewayAMMRouter(BaseRouter):
             request_data["wallet_address"] = wallet_address
         return await self._post("/gateway/amm/positions-owned", json=request_data)
 
-    async def get_swap_quote(
-        self,
-        connector: str,
-        network: str,
-        pool_address: str,
-        base_token: str,
-        side: str,
-        amount: Decimal,
-        slippage_pct: Optional[Decimal] = None,
-    ) -> Dict[str, Any]:
-        """Quote a swap against a specific AMM pool (pool-scoped, not router)."""
-        request_data = {
-            "connector": connector,
-            "network": network,
-            "pool_address": pool_address,
-            "base_token": base_token,
-            "side": side,
-            "amount": str(amount),
-        }
-        if slippage_pct is not None:
-            request_data["slippage_pct"] = str(slippage_pct)
-        return await self._post("/gateway/amm/quote-swap", json=request_data)
-
-    async def execute_swap(
-        self,
-        connector: str,
-        network: str,
-        pool_address: str,
-        base_token: str,
-        side: str,
-        amount: Decimal,
-        slippage_pct: Optional[Decimal] = None,
-        wallet_address: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Execute a swap against a specific AMM pool."""
-        request_data = {
-            "connector": connector,
-            "network": network,
-            "pool_address": pool_address,
-            "base_token": base_token,
-            "side": side,
-            "amount": str(amount),
-            "slippage_pct": str(slippage_pct) if slippage_pct is not None else "1.0",
-        }
-        if wallet_address:
-            request_data["wallet_address"] = wallet_address
-        return await self._post("/gateway/amm/execute-swap", json=request_data)
-
     async def get_liquidity_quote(
         self,
         connector: str,
@@ -159,8 +111,9 @@ class GatewayAMMRouter(BaseRouter):
             "pool_address": pool_address,
             "base_token_amount": str(base_token_amount),
             "quote_token_amount": str(quote_token_amount),
-            "slippage_pct": str(slippage_pct) if slippage_pct is not None else "1.0",
         }
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
         if wallet_address:
             request_data["wallet_address"] = wallet_address
         if position_address:
@@ -206,18 +159,19 @@ class GatewayAMMRouter(BaseRouter):
         base_token_amount: Decimal,
         quote_token_amount: Optional[Decimal] = None,
         initial_price: Optional[Decimal] = None,
-        config_address: Optional[str] = None,
-        fee_config_index: Optional[int] = None,
-        gas_price: Optional[Decimal] = None,
-        max_gas: Optional[int] = None,
+        slippage_pct: Optional[Decimal] = None,
         wallet_address: Optional[str] = None,
+        extra_params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Create and seed a new AMM pool.
 
         Seed price priority: initial_price -> quote_token_amount ratio -> live market price
-        (anti-snipe). Only base_token_amount is required. Connector extras are sent only when set:
-        config_address (meteora, required), fee_config_index (raydium), gas_price/max_gas (uniswap).
+        (anti-snipe). Only base_token_amount is required. slippage_pct bounds the seeding
+        deposit on EVM connectors; omit to use the connector's configured slippage.
+        Connector-specific params ride extra_params under Gateway's own names:
+        configAddress (meteora, required there), ammConfigIndex (raydium).
+        Unknown keys are rejected by the API with a 400.
         """
         request_data = {
             "connector": connector,
@@ -230,14 +184,82 @@ class GatewayAMMRouter(BaseRouter):
             request_data["quote_token_amount"] = str(quote_token_amount)
         if initial_price is not None:
             request_data["initial_price"] = str(initial_price)
-        if config_address is not None:
-            request_data["config_address"] = config_address
-        if fee_config_index is not None:
-            request_data["fee_config_index"] = fee_config_index
-        if gas_price is not None:
-            request_data["gas_price"] = str(gas_price)
-        if max_gas is not None:
-            request_data["max_gas"] = max_gas
+        if slippage_pct is not None:
+            request_data["slippage_pct"] = str(slippage_pct)
         if wallet_address:
             request_data["wallet_address"] = wallet_address
+        if extra_params:
+            request_data["extra_params"] = extra_params
         return await self._post("/gateway/amm/create-pool", json=request_data)
+
+    async def search_events(
+        self,
+        connector: Optional[str] = None,
+        network: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        pool_address: Optional[str] = None,
+        event_type: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> Dict[str, Any]:
+        """
+        Search recorded AMM liquidity writes, newest first.
+
+        This is the AMM history — ADD_LIQUIDITY, REMOVE_LIQUIDITY and CREATE_POOL with
+        their on-chain amounts and gas. Current holdings are not here; read those live
+        from get_position_info(), which is the only authority on them.
+
+        Args:
+            connector: Filter by connector (e.g. 'meteora', 'raydium')
+            network: Filter by network (e.g. 'solana-mainnet-beta')
+            wallet_address: Filter by wallet address
+            pool_address: Filter by pool address
+            event_type: ADD_LIQUIDITY, REMOVE_LIQUIDITY or CREATE_POOL
+            status: Filter by status
+            limit: Max results (default 50, capped at 1000 by the API)
+            offset: Pagination offset
+        """
+        return await self._post("/gateway/amm/events/search", params=self._search_params(
+            connector=connector, network=network, wallet_address=wallet_address,
+            pool_address=pool_address, event_type=event_type, status=status,
+            limit=limit, offset=offset,
+        ))
+
+    async def search_positions(
+        self,
+        connector: Optional[str] = None,
+        network: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        pool_address: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> Dict[str, Any]:
+        """
+        Search tracked AMM positions (Meteora DAMM v2 NFTs), newest first.
+
+        Fungible-LP AMMs never appear here — they have no position identity. Their
+        holdings come from get_position_info() and their history from search_events().
+
+        Args:
+            connector: Filter by connector (e.g. 'meteora')
+            network: Filter by network (e.g. 'solana-mainnet-beta')
+            wallet_address: Filter by wallet address
+            pool_address: Filter by pool address
+            status: Filter by status (OPEN, CLOSED)
+            limit: Max results (default 50, capped at 1000 by the API)
+            offset: Pagination offset
+        """
+        return await self._post("/gateway/amm/positions/search", params=self._search_params(
+            connector=connector, network=network, wallet_address=wallet_address,
+            pool_address=pool_address, status=status, limit=limit, offset=offset,
+        ))
+
+    @staticmethod
+    def _search_params(limit: int, offset: int, **filters: Optional[str]) -> Dict[str, Any]:
+        """hapi declares the search filters as query parameters on a POST — a JSON body
+        is silently ignored, so they must ride the query string."""
+        params: Dict[str, Any] = {"limit": limit, "offset": offset}
+        params.update({key: value for key, value in filters.items() if value is not None})
+        return params

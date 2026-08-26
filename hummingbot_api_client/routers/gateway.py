@@ -1,5 +1,5 @@
 from typing import Optional, Dict, Any, List
-from .base import BaseRouter
+from .base import BaseRouter, QueryParams
 
 
 class GatewayRouter(BaseRouter):
@@ -159,67 +159,6 @@ class GatewayRouter(BaseRouter):
             "/gateway/pools",
             params={"connector_name": connector_name, "network": network}
         )
-
-    async def add_pool(
-        self,
-        connector_name: str,
-        pool_type: str,
-        network: str,
-        base: str,
-        quote: str,
-        address: str
-    ) -> Dict[str, Any]:
-        """
-        Add a custom liquidity pool.
-
-        Args:
-            connector_name: DEX connector name
-            pool_type: Type of pool
-            network: Network name
-            base: Base token symbol
-            quote: Quote token symbol
-            address: Pool address
-        """
-        pool_data = {
-            "connector_name": connector_name,
-            "type": pool_type,
-            "network": network,
-            "base": base,
-            "quote": quote,
-            "address": address
-        }
-        return await self._post("/gateway/pools", json=pool_data)
-
-    async def delete_pool(
-        self,
-        connector: str,
-        network: str,
-        pool_type: str,
-        address: str
-    ) -> Dict[str, Any]:
-        """
-        Delete a liquidity pool from Gateway's pool list.
-
-        Args:
-            connector: DEX connector (e.g., 'meteora', 'raydium', 'uniswap')
-            network: Network name (e.g., 'mainnet-beta', 'mainnet')
-            pool_type: Pool type (e.g., 'CLMM', 'AMM')
-            address: Pool contract address to remove
-
-        Example:
-            await client.gateway.delete_pool(
-                connector='meteora',
-                network='mainnet-beta',
-                pool_type='CLMM',
-                address='2sf5NYcY4zUPXUSmG6f66mskb24t5F8S11pC1Nz5nQT3'
-            )
-        """
-        params = {
-            "connector_name": connector,
-            "network": network,
-            "pool_type": pool_type.lower()  # Gateway expects lowercase (amm, clmm)
-        }
-        return await self._delete(f"/gateway/pools/{address}", params=params)
 
     # ============================================
     # Networks (Primary Endpoints)
@@ -477,22 +416,41 @@ class GatewayRouter(BaseRouter):
     async def save_network_pool(
         self,
         network_id: str,
-        pool_address: str
+        pool_address: str,
+        connector: Optional[str] = None,
+        type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Save a pool by address - auto-fetches pool info from the blockchain.
+        Save a pool by address, auto-adding its tokens.
 
-        This is the simplest way to add a pool. Just provide the address and
-        the API will fetch connector, type, tokens, and fees automatically.
+        The pool's base, quote and fee always come from the connector. Gateway only
+        needs GeckoTerminal to answer which DEX the address belongs to, and whether it
+        is amm or clmm. Pass connector and type to answer that directly and skip the
+        lookup — which also makes this work for a pool GeckoTerminal has not indexed,
+        the newest ones being exactly the ones it is most likely to be missing.
 
         Args:
             network_id: Network ID in format 'chain-network' (e.g., 'solana-mainnet-beta')
             pool_address: Pool contract address
+            connector: DEX connector ('meteora', 'raydium', 'orca', 'uniswap').
+                Must be given together with type, or both omitted.
+            type: Pool type, 'amm' or 'clmm'. Must be given together with connector.
 
         Example:
+            # Caller knows the venue — an LP provider config of 'meteora/clmm' splits
+            # straight into these two arguments, and no indexer is consulted.
             await client.gateway.save_network_pool(
                 network_id='solana-mainnet-beta',
-                pool_address='58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2'
+                pool_address='2sf5NYcY4zUPXUSmG6f66mskb24t5F8S11pC1Nz5nQT3',
+                connector='meteora',
+                type='clmm',
             )
         """
-        return await self._post(f"/gateway/networks/{network_id}/pools/save/{pool_address}")
+        params: QueryParams = {}
+        if connector and type:
+            params["connector"] = connector
+            params["type"] = type
+        return await self._post(
+            f"/gateway/networks/{network_id}/pools/save/{pool_address}",
+            params=params or None,
+        )

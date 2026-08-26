@@ -88,36 +88,6 @@ class BotOrchestrationRouter(BaseRouter):
         }
         return await self._post("/bot-orchestration/stop-bot", json=stop_bot_action)
 
-    async def import_strategy_for_bot(
-            self,
-            bot_name: str,
-            strategy: str
-    ) -> Dict[str, Any]:
-        """
-        Import a strategy configuration for a bot.
-
-        Args:
-            bot_name: Name of the bot instance
-            strategy: Strategy name to import
-        """
-        data = {"strategy": strategy}
-        return await self._post(f"/bot-orchestration/{bot_name}/import-strategy", json=data)
-
-    async def configure_bot(
-            self,
-            bot_name: str,
-            params: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Configure bot parameters.
-
-        Args:
-            bot_name: Name of the bot instance
-            params: Dictionary of configuration parameters
-        """
-        data = {"params": params}
-        return await self._post(f"/bot-orchestration/{bot_name}/config", json=data)
-
     async def stop_and_archive_bot(
             self,
             bot_name: str,
