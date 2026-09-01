@@ -372,6 +372,33 @@ class ExecutorsWebSocket(_BaseWebSocket):
             raise RuntimeError(f"Subscribe failed: {resp.get('message')}")
         return resp.get("subscription_id", "")
 
+    async def subscribe_all_bots_status(
+        self,
+        update_interval: float = 5.0,
+    ) -> str:
+        """Subscribe to the status of every active bot.
+
+        Each push carries one entry per running bot, with its performance and
+        ``custom_info`` — the streaming form of
+        ``GET /bot-orchestration/bots-status``.
+
+        Args:
+            update_interval: How often the server pushes updates (0.5-60s)
+
+        Returns:
+            Subscription ID
+        """
+        msg: Dict[str, Any] = {
+            "action": "subscribe",
+            "type": "all_bots_status",
+            "update_interval": update_interval,
+        }
+        await self._send(msg)
+        resp = await self._receive()
+        if resp.get("type") == "error":
+            raise RuntimeError(f"Subscribe failed: {resp.get('message')}")
+        return resp.get("subscription_id", "")
+
 
 class WebSocketRouter:
     """Manages WebSocket connections to the Hummingbot API."""
