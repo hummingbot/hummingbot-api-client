@@ -152,6 +152,9 @@ Manage bot lifecycle and deployment.
 - `deploy_v2_script(name, profile, script, config)` - Deploy a script bot
 - `deploy_v2_controllers(name, profile, controllers)` - Deploy controller bot
 - `get_bot_runs()` - Get bot run history
+- `get_rate_oracle_sources()` - List rate oracle sources bots can use
+- `get_rate_oracle_config(account_name)` - Get the bot rate oracle config of a credentials profile
+- `update_rate_oracle_config(account_name, rate_oracle_source, global_token_name, global_token_symbol)` - Update it (applies on next deploy)
 
 #### 📋 Controllers Router (`client.controllers`)
 Manage V2 strategy controllers.
