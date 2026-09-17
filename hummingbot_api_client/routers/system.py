@@ -15,7 +15,9 @@ class SystemRouter(BaseRouter):
         are still reported.
 
         Returns:
-            api_version, hummingbot_version, docker_available, container
+            api_version, hummingbot_version, market_data (the MARKET_DATA_* tunables as
+            this API process resolved them -- reported, never writable, since the API
+            cannot rewrite its own .env), docker_available, container
             ({id, name, image, image_id, digest, compose_project, compose_working_dir,
             compose_config_files} or None), and pinned / pinned_reason / override_file
             saying whether the image is the published one (pinned is None when the

@@ -316,7 +316,8 @@ class BotOrchestrationRouter(BaseRouter):
 
         Returns:
             account_name, rate_oracle_source ({name}), global_token
-            ({global_token_name, global_token_symbol}) and available_sources
+            ({global_token_name, global_token_symbol}), rate_limits_share_pct and
+            available_sources
         """
         params = {"account_name": account_name}
         return await self._get("/bot-orchestration/rate-oracle/config", params=params)
@@ -326,10 +327,11 @@ class BotOrchestrationRouter(BaseRouter):
             account_name: str = "master_account",
             rate_oracle_source: Optional[str] = None,
             global_token_name: Optional[str] = None,
-            global_token_symbol: Optional[str] = None
+            global_token_symbol: Optional[str] = None,
+            rate_limits_share_pct: Optional[float] = None
     ) -> Dict[str, Any]:
         """
-        Update the bot rate oracle source and/or global token in a credentials profile's conf_client.yml.
+        Update the client defaults in a credentials profile's conf_client.yml.
 
         Bots pick the change up on their next deploy (running bots keep their copied config).
         Changing master_account's global token also switches the API's own valuation quote token.
@@ -340,6 +342,9 @@ class BotOrchestrationRouter(BaseRouter):
             rate_oracle_source: Rate oracle source name (see get_rate_oracle_sources())
             global_token_name: Token to use as global quote (e.g., USDT, USD, BTC); must not be blank
             global_token_symbol: Symbol to display for the global token (e.g., "$")
+            rate_limits_share_pct: Share of each exchange's API rate limit one bot instance may
+                spend, 0 < pct <= 100. The API rejects anything outside that with a 422, the same
+                bound hummingbot's own ClientConfigMap enforces when the bot reads the file back
 
         Returns:
             success, message and the updated config
@@ -355,5 +360,7 @@ class BotOrchestrationRouter(BaseRouter):
             global_token["global_token_symbol"] = global_token_symbol
         if global_token:
             update_request["global_token"] = global_token
+        if rate_limits_share_pct is not None:
+            update_request["rate_limits_share_pct"] = rate_limits_share_pct
 
         return await self._put("/bot-orchestration/rate-oracle/config", json=update_request, params=params)
