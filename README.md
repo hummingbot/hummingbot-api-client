@@ -237,6 +237,17 @@ Access real-time and historical market data.
 - `get_funding_info(connector, pair)` - Get funding rates
 - `get_vwap_for_volume(connector, pair, volume, is_buy)` - Calculate VWAP
 
+#### 🖥️ System Router (`client.system`)
+Information about the API server itself.
+
+**Key features:**
+- hummingbot-api and hummingbot versions of the server you are talking to
+- The API's own container: image, digest and compose project
+- Whether that image is pinned (built locally, or brought up with a compose override)
+
+**Common methods:**
+- `get_system_info()` - Versions, own container and image pinning of the API server
+
 ## Examples
 
 ### Jupyter Notebooks

@@ -14,6 +14,7 @@ from .gateway_amm import GatewayAMMRouter
 from .market_data import MarketDataRouter
 from .portfolio import PortfolioRouter
 from .scripts import ScriptsRouter
+from .system import SystemRouter
 from .trading import TradingRouter
 
 __all__ = [
@@ -33,5 +34,6 @@ __all__ = [
     "MarketDataRouter",
     "PortfolioRouter",
     "ScriptsRouter",
+    "SystemRouter",
     "TradingRouter"
 ]

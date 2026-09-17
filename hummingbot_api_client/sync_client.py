@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from .routers.market_data import MarketDataRouter
     from .routers.portfolio import PortfolioRouter
     from .routers.scripts import ScriptsRouter
+    from .routers.system import SystemRouter
     from .routers.trading import TradingRouter
 
 T = TypeVar('T')
@@ -84,6 +85,7 @@ class SyncHummingbotAPIClient:
             self.market_data: MarketDataRouter
             self.portfolio: PortfolioRouter
             self.scripts: ScriptsRouter
+            self.system: SystemRouter
             self.trading: TradingRouter
 
     def __enter__(self) -> 'SyncHummingbotAPIClient':
@@ -161,7 +163,7 @@ class SyncHummingbotAPIClient:
             'accounts', 'archived_bots', 'backtesting', 'bot_orchestration',
             'connectors', 'controllers', 'docker', 'executors', 'gateway',
             'gateway_swap', 'gateway_clmm', 'gateway_amm', 'market_data',
-            'portfolio', 'scripts', 'trading'
+            'portfolio', 'scripts', 'system', 'trading'
         ]
 
         for router_name in router_attrs:
