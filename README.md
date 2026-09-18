@@ -244,9 +244,17 @@ Information about the API server itself.
 - hummingbot-api and hummingbot versions of the server you are talking to
 - The API's own container: image, digest and compose project
 - Whether that image is pinned (built locally, or brought up with a compose override)
+- Upgrading the server's own container to the published image, with a preflight that refuses when it is not safe
 
 **Common methods:**
 - `get_system_info()` - Versions, own container and image pinning of the API server
+- `get_upgrade_preflight()` - Whether the server can replace its own container, and what it would cost
+- `start_upgrade(acknowledge_executor_loss)` - Pull the published image and recreate the API container
+- `get_upgrade_status()` - Follow a running upgrade, and read its outcome after the restart
+
+**Note:** an upgrade restarts the API, which closes every RUNNING executor as
+`SYSTEM_CLEANUP`; bot containers are unaffected. A server whose image is pinned -- built
+locally, or brought up with a compose override file -- is refused, and stays an SSH job.
 
 ## Examples
 

@@ -9265,6 +9265,93 @@
         ]
       }
     },
+    "/system/upgrade/preflight": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Get Upgrade Preflight",
+        "description": "Report whether this API can replace its own container, and what it would cost.\n\nRead-only and never raises: a daemon that cannot be reached, a container that cannot\nbe placed and a registry that cannot be read are all reported as can_upgrade false\nwith a blocked_reason, because the caller of a destructive action needs a reason far\nmore than it needs a 500.\n\nReturns:\n    Dictionary with image_ref, current_digest, available_digest, up_to_date, the\n    pinning verdict (pinned / pinned_reason / override_file), the compose project,\n    working dir and config files, running_executors and running_bots, and\n    can_upgrade with its blocked_reason (None only when the upgrade may be started).",
+        "operationId": "get_upgrade_preflight_system_upgrade_preflight_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/upgrade": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Start Upgrade",
+        "description": "Pull the published image and hand the container recreate to a helper container.\n\nThe preflight is re-run here, so a server that became unupgradable since the caller\nlast looked -- an executor started, another upgrade began, the daemon went away --\nis refused rather than upgraded on a stale reading.\n\nArgs:\n    request: acknowledge_executor_loss, the caller's consent to every running\n        executor being closed as SYSTEM_CLEANUP. Required when any is running.\n\nReturns:\n    202 with the run id and the initial phase. The API is replaced part-way through,\n    so the result is read back from /system/upgrade/status after it restarts.\n\nRaises:\n    HTTPException: 409 when the upgrade is refused. Nothing was pulled, and nothing\n        on the server was changed.",
+        "operationId": "start_upgrade_system_upgrade_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/SelfUpgradeRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/upgrade/status": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Get Upgrade Status",
+        "description": "Report the current or last self-upgrade.\n\nPhases: idle (there has been none), pulling, recreating (this API is about to be\nreplaced, so the next answer comes from the new one), done, failed. After a\nsuccessful recreate the record is the one this API collected from the helper\ncontainer on boot, including its exit code and the tail of its output.\n\nReturns:\n    Dictionary with run_id, phase, detail, previous_digest, new_digest, exit_code\n    and log_tail.",
+        "operationId": "get_upgrade_status_system_upgrade_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/executors/": {
       "post": {
         "tags": [
@@ -15200,6 +15287,19 @@
         ],
         "title": "Script",
         "description": "Script file content"
+      },
+      "SelfUpgradeRequest": {
+        "properties": {
+          "acknowledge_executor_loss": {
+            "type": "boolean",
+            "title": "Acknowledge Executor Loss",
+            "description": "Confirms that every running executor will be closed as SYSTEM_CLEANUP and not restored. Required when the server has any running executor.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "SelfUpgradeRequest",
+        "description": "Consent to what a self-upgrade destroys.\n\nRestarting the API closes every RUNNING executor as SYSTEM_CLEANUP and they are not\nrestored, so the one field here is the acknowledgement of that -- and it defaults to\nFalse, which means a caller that sends an empty body is refused rather than served.\nBot containers are separate and keep running."
       },
       "SetDefaultWalletRequest": {
         "properties": {
