@@ -152,6 +152,9 @@ Manage bot lifecycle and deployment.
 - `deploy_v2_script(name, profile, script, config)` - Deploy a script bot
 - `deploy_v2_controllers(name, profile, controllers)` - Deploy controller bot
 - `get_bot_runs()` - Get bot run history
+- `get_rate_oracle_sources()` - List rate oracle sources bots can use
+- `get_rate_oracle_config(account_name)` - Get the bot rate oracle config of a credentials profile
+- `update_rate_oracle_config(account_name, rate_oracle_source, global_token_name, global_token_symbol)` - Update it (applies on next deploy)
 
 #### 📋 Controllers Router (`client.controllers`)
 Manage V2 strategy controllers.
@@ -233,6 +236,25 @@ Access real-time and historical market data.
 - `get_order_book(connector, pair, depth)` - Get order book
 - `get_funding_info(connector, pair)` - Get funding rates
 - `get_vwap_for_volume(connector, pair, volume, is_buy)` - Calculate VWAP
+
+#### 🖥️ System Router (`client.system`)
+Information about the API server itself.
+
+**Key features:**
+- hummingbot-api and hummingbot versions of the server you are talking to
+- The API's own container: image, digest and compose project
+- Whether that image is pinned (built locally, or brought up with a compose override)
+- Upgrading the server's own container to the published image, with a preflight that refuses when it is not safe
+
+**Common methods:**
+- `get_system_info()` - Versions, own container and image pinning of the API server
+- `get_upgrade_preflight()` - Whether the server can replace its own container, and what it would cost
+- `start_upgrade(acknowledge_executor_loss)` - Pull the published image and recreate the API container
+- `get_upgrade_status()` - Follow a running upgrade, and read its outcome after the restart
+
+**Note:** an upgrade restarts the API, which closes every RUNNING executor as
+`SYSTEM_CLEANUP`; bot containers are unaffected. A server whose image is pinned -- built
+locally, or brought up with a compose override file -- is refused, and stays an SSH job.
 
 ## Examples
 

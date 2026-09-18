@@ -16,6 +16,7 @@ from .routers import (
     MarketDataRouter,
     PortfolioRouter,
     ScriptsRouter,
+    SystemRouter,
     TradingRouter
 )
 from .ws import WebSocketRouter
@@ -49,6 +50,7 @@ class HummingbotAPIClient:
         self._market_data: Optional[MarketDataRouter] = None
         self._portfolio: Optional[PortfolioRouter] = None
         self._scripts: Optional[ScriptsRouter] = None
+        self._system: Optional[SystemRouter] = None
         self._trading: Optional[TradingRouter] = None
         self._ws: Optional[WebSocketRouter] = None
         self._username = username
@@ -76,6 +78,7 @@ class HummingbotAPIClient:
             self._market_data = MarketDataRouter(self._session, self.base_url)
             self._portfolio = PortfolioRouter(self._session, self.base_url)
             self._scripts = ScriptsRouter(self._session, self.base_url)
+            self._system = SystemRouter(self._session, self.base_url)
             self._trading = TradingRouter(self._session, self.base_url)
             self._ws = WebSocketRouter(self._session, self.base_url, self._username, self._password)
     
@@ -99,6 +102,7 @@ class HummingbotAPIClient:
             self._market_data = None
             self._portfolio = None
             self._scripts = None
+            self._system = None
             self._trading = None
             self._ws = None
     
@@ -207,6 +211,13 @@ class HummingbotAPIClient:
             raise RuntimeError("Client not initialized. Call await client.init() first.")
         return self._scripts
     
+    @property
+    def system(self) -> SystemRouter:
+        """Access the system router."""
+        if self._system is None:
+            raise RuntimeError("Client not initialized. Call await client.init() first.")
+        return self._system
+
     @property
     def trading(self) -> TradingRouter:
         """Access the trading router."""
