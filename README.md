@@ -311,17 +311,25 @@ client = HummingbotClient(
 )
 ```
 
+## Development Setup
+
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
+
+```bash
+# Install uv: https://docs.astral.sh/uv/getting-started/installation/
+
+# Install the project and its dependencies (including dev dependencies) into a local venv
+uv sync --all-groups
+
+# Run the test suite
+uv run pytest
+```
+
 ## Building
 
 ```bash
-# Install build dependencies
-uv pip install build
-
-# Build the package
-python -m build
-
-# Install in development mode
-pip install -e .
+# Build the sdist and wheel into dist/
+uv build
 ```
 
 ## License
