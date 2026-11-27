@@ -26,6 +26,11 @@ dependencies = [
     "aiohttp",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
 [project.urls]
 Homepage = "https://github.com/hummingbot/hummingbot-api-client"
 Documentation = "https://github.com/hummingbot/hummingbot-api-client#readme"

@@ -16,7 +16,7 @@ jobs:
     
     environment:
       name: pypi
-      url: https://pypi.org/p/hummingbot-client
+      url: https://pypi.org/p/hummingbot-api-client
     
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
@@ -28,20 +28,15 @@ jobs:
       with:
         fetch-depth: 0  # Fetch full history for proper versioning
     
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
       with:
         python-version: '3.11'
-    
-    - name: Install build dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install build twine
-    
+
     - name: Extract version from pyproject.toml
       id: get_version
       run: |
-        VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+        VERSION=$(uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Version to be published: $VERSION"
     
@@ -49,7 +44,7 @@ jobs:
       id: check_version
       run: |
         VERSION="${{ steps.get_version.outputs.version }}"
-        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/hummingbot-client/$VERSION/json/")
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/hummingbot-api-client/$VERSION/json/")
         if [ "$HTTP_STATUS" = "200" ]; then
           echo "exists=true" >> $GITHUB_OUTPUT
           echo "Version $VERSION already exists on PyPI"
@@ -61,8 +56,8 @@ jobs:
     - name: Build package
       if: steps.check_version.outputs.exists == 'false'
       run: |
-        python -m build
-        
+        uv build
+
     - name: Verify package contents
       if: steps.check_version.outputs.exists == 'false'
       run: |
@@ -70,7 +65,7 @@ jobs:
         ls -la dist/
         echo ""
         echo "Checking package contents:"
-        python -m twine check dist/*
+        uvx twine check dist/*
     
     - name: Publish to PyPI
       if: steps.check_version.outputs.exists == 'false'
@@ -94,22 +89,22 @@ jobs:
           
           **Installation:**
           ```bash
-          pip install hummingbot-client==${{ steps.get_version.outputs.version }}
+          pip install hummingbot-api-client==${{ steps.get_version.outputs.version }}
           ```
           
           **What's Changed:**
           - See commit history for detailed changes
           
-          **Full Changelog:** https://github.com/hummingbot/hummingbot-client/compare/v${{ steps.get_version.outputs.version }}...v${{ steps.get_version.outputs.version }}
+          **Full Changelog:** https://github.com/hummingbot/hummingbot-api-client/compare/v${{ steps.get_version.outputs.version }}...v${{ steps.get_version.outputs.version }}
         draft: false
         prerelease: false
     
     - name: Summary
       if: steps.check_version.outputs.exists == 'false'
       run: |
-        echo "✅ Successfully published hummingbot-client v${{ steps.get_version.outputs.version }} to PyPI!"
-        echo "📦 Package URL: https://pypi.org/project/hummingbot-client/${{ steps.get_version.outputs.version }}/"
-        echo "🎉 GitHub Release: https://github.com/hummingbot/hummingbot-client/releases/tag/v${{ steps.get_version.outputs.version }}"
+        echo "✅ Successfully published hummingbot-api-client v${{ steps.get_version.outputs.version }} to PyPI!"
+        echo "📦 Package URL: https://pypi.org/project/hummingbot-api-client/${{ steps.get_version.outputs.version }}/"
+        echo "🎉 GitHub Release: https://github.com/hummingbot/hummingbot-api-client/releases/tag/v${{ steps.get_version.outputs.version }}"
     
     - name: Skip publication
       if: steps.check_version.outputs.exists == 'true'
